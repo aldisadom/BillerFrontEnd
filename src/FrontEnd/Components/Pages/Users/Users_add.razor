@@ -1,0 +1,55 @@
+﻿@page "/users/add"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.User
+@using Contracts.Responses
+@using Contracts.Responses.User
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject IUserClient _userClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>User add</PageTitle>
+
+<div style="display: flex; align-items: center;">
+    <div style="margin-left: 20px;">
+    <button @onclick="AddClick">Add</button>
+    </div>      
+</div>
+<b>Email:</b>
+<br />
+<input type="text" @bind="_user.Email" />
+<br />
+<b>Name:</b>
+<br />
+<input type="text" @bind="_user.Name" />
+<br />
+<b>LastName:</b>
+<br />
+<input type="text" @bind="_user.LastName" />
+<br />
+<b>Password:</b>
+<br />
+<input type="text" @bind="_user.Password" />
+
+
+
+@code {
+    private UserAddRequest? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _user = new();
+    }
+
+    private async Task AddClick()
+    {
+        AddResponse response = await _userClient.Add(_user);
+        await _userClient.Get(response.Id);
+
+        _navigationManager.NavigateTo($"/users/{response.Id}", false);
+    }
+}

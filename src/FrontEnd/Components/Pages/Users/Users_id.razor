@@ -1,0 +1,116 @@
+﻿@page "/users/{IdString}"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.User
+@using Contracts.Responses.User
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject IUserClient _userClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>User</PageTitle>
+@if (_user == null)
+{
+    <h1>User</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@_user.Name</h1>
+        @if (_isEditable)
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="UpdateClick">Update</button>
+            </div>
+            <div style="margin-left: 20px;">
+                <button @onclick="DeleteClick">Delete</button>
+            </div>
+        }
+        else
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="EditClick">Edit</button>
+            </div>            
+        }        
+    </div>
+    @if (_isEditable)
+    {
+        <b>Email:</b>
+        <br />
+        @_user.Email
+        <br />
+        <b>Name:</b>
+        <br />
+        <input type="text" @bind="_user.Name" />
+        <br />
+        <b>LastName:</b>
+        <br />
+        <input type="text" @bind="_user.LastName" />
+    }
+    else
+    {
+        <b>Email:</b>
+        <br />
+        @_user.Email
+        <br />
+        <b>Name:</b>
+        <br />
+        @_user.Name
+        <br />        
+        <b>LastName:</b>
+        <br />
+        @_user.LastName
+    }
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid _userId;
+    private bool _isEditable = false;
+    private UserResponse? _user;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _userId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        await GetUser();
+    }
+
+    private async Task GetUser()
+    {
+        _user = await _userClient.Get(_userId);        
+    }
+
+    private void EditClick()
+    {
+        _isEditable = true;
+    }
+
+    private async Task UpdateClick()
+    {
+        UserUpdateRequest request = new()
+            {
+                Id = _user.Id,
+                Name = _user.Name,
+                LastName = _user.LastName
+            };
+        await _userClient.Update(request);
+
+        await GetUser();
+    }
+
+    private async Task DeleteClick()
+    {
+        await _userClient.Delete(_userId);
+        _navigationManager.NavigateTo("/users", false);
+    }
+}

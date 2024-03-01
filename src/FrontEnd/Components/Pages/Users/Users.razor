@@ -1,0 +1,66 @@
+﻿@page "/users"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Responses.User
+
+@inject IUserClient _userClient
+@inject NavigationManager _navigationManager
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Users</PageTitle>
+<div style="display: flex; align-items: center;">
+    <h1>Users</h1>    
+    <div style="margin-left: 20px;">
+        <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+@if (userList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>                
+                <th>Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in userList.Users)
+            {
+                <tr>                    
+                    <td>@user.Name</td>
+                    <td>@user.LastName</td>
+                    <td>@user.Email</td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"users/{user.Id}")">
+                            @user.Id
+                        </NavLink>
+                    </td>
+                    
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private UserListResponse? userList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userList = await _userClient.Get();
+    }
+
+    private void AddClick()
+    {
+        _navigationManager.NavigateTo($"/users/add", false);
+    }
+}
