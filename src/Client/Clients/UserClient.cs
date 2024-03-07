@@ -4,11 +4,6 @@ using Contracts.Responses;
 using Contracts.Responses.User;
 using Domain.IOptions;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Clients.Clients;
 
@@ -26,7 +21,7 @@ public class UserClient : IUserClient
 
     public async Task<UserLoginResponse> Login(UserLoginRequest user)
     {
-        Dictionary<string,string > headers = new()
+        Dictionary<string, string> headers = new()
         {
             { "Email", user.Email },
             { "Password", user.Password }
@@ -47,7 +42,7 @@ public class UserClient : IUserClient
 
     public async Task<AddResponse> Add(UserAddRequest user)
     {
-        return  await _userHttpClient.PostAsync<UserAddRequest,AddResponse>($"User", user);
+        return await _userHttpClient.PostAsync<UserAddRequest, AddResponse>($"User", user);
     }
 
     public async Task Update(UserUpdateRequest user)

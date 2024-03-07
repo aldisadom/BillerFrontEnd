@@ -87,7 +87,7 @@ public class BaseHttpClient
         return DecodeResponse<T>(responseBody);
     }
 
-    public async Task<T2> PostAsync<T1,T2>(string endpoint, T1 data, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
+    public async Task<T2> PostAsync<T1, T2>(string endpoint, T1 data, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
     {
         HttpClient client = _httpClientFactory.CreateClient();
 

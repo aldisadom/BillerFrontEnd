@@ -1,0 +1,111 @@
+﻿@page "/invoice_items/{IdString}"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.InvoiceItem
+@using Contracts.Responses.InvoiceItem
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject IInvoiceItemClient _invoiceItemClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice item</PageTitle>
+@if (_invoiceItem == null)
+{
+    <h1>Invoice item</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@_invoiceItem.Name</h1>
+        @if (_isEditable)
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="UpdateClick">Update</button>
+            </div>
+            <div style="margin-left: 20px;">
+                <button @onclick="DeleteClick">Delete</button>
+            </div>
+        }
+        else
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="EditClick">Edit</button>
+            </div>            
+        }        
+    </div>
+    @if (_isEditable)
+    {
+        <b>Name:</b>
+        <br />
+        <input type="text" @bind="_invoiceItem.Name" />
+        <br />
+        <b>Price:</b>
+        <br />
+        <input type="number" step="0.01" @bind-value="_invoiceItem.Price" />
+        <br />
+    }
+    else
+    {
+        <b>Name:</b>
+        <br />
+        @_invoiceItem.Name
+        <br />
+        <b>Price:</b>
+        <br />
+        @_invoiceItem.Price
+        <br />
+    }
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid _invoiceItemId;
+    private bool _isEditable = false;
+    private InvoiceItemResponse? _invoiceItem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _invoiceItemId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        await GetInvoiceItem();
+    }
+
+    private async Task GetInvoiceItem()
+    {
+        _invoiceItem = await _invoiceItemClient.Get(_invoiceItemId);
+    }
+
+    private void EditClick()
+    {
+        _isEditable = true;
+    }
+
+    private async Task UpdateClick()
+    {
+        InvoiceItemUpdateRequest request = new()
+            {
+                Id = _invoiceItem!.Id,
+                Name = _invoiceItem.Name,
+                Price = _invoiceItem.Price
+
+            };
+        await _invoiceItemClient.Update(request);
+
+        await GetInvoiceItem();
+    }
+
+    private async Task DeleteClick()
+    {
+        await _invoiceItemClient.Delete(_invoiceItemId);
+        _navigationManager.NavigateTo("/invoice_items", false);
+    }
+}

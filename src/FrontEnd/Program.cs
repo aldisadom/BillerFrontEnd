@@ -1,8 +1,6 @@
 using Clients;
 using Domain.IOptions;
 using FrontEnd.Components;
-using Microsoft.AspNetCore.Diagnostics;
-using System.Net;
 
 namespace FrontEnd;
 
@@ -13,8 +11,8 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.Configure<ClientsOptions>(builder.Configuration.GetSection("ClientsOptions"));
+        bool detailedErrors = builder.Configuration.GetValue<bool>("DetailedErrors");
 
-        
         builder.Services.AddClients();
 
         // Add services to the container.
@@ -24,7 +22,7 @@ public class Program
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
-        if (!app.Environment.IsDevelopment())
+        if (detailedErrors)
         {
             app.UseExceptionHandler("/Error");
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
@@ -38,7 +36,7 @@ public class Program
 
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
-      
+
         app.Run();
     }
 }

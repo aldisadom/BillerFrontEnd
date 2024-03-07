@@ -1,0 +1,192 @@
+﻿@page "/invoice_addresses/{IdString}"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.InvoiceAddress
+@using Contracts.Requests.InvoiceItem
+@using Contracts.Responses.InvoiceAddress
+@using Contracts.Responses.InvoiceItem
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject IInvoiceAddressClient _invoiceAddressClient
+@inject IInvoiceItemClient _invoiceItemClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice address</PageTitle>
+@if (_invoiceAddress == null)
+{
+    <h1>Invoice address</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@_invoiceAddress.CompanyName</h1>
+        @if (_isEditable)
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="UpdateClick">Update</button>
+            </div>
+            <div style="margin-left: 20px;">
+                <button @onclick="DeleteClick">Delete</button>
+            </div>
+        }
+        else
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="EditClick">Edit</button>
+            </div>            
+        }        
+    </div>
+    @if (_isEditable)
+    {
+        <b>Company Name:</b>
+        <br />
+        <input type="text" @bind="_invoiceAddress.CompanyName" />
+        <br />
+        <b>Email:</b>
+        <br />
+        <input type="text" @bind="_invoiceAddress.Email" />
+        <br />
+        <b>Phone:</b>
+        <br />
+        <input type="text" @bind="_invoiceAddress.Phone" />
+        <br />
+        <b>State:</b>
+        <br />
+        <input type="text" @bind="_invoiceAddress.State" />
+        <br />
+        <b>City:</b>
+        <br />
+        <input type="text" @bind="_invoiceAddress.City" />
+        <br />
+        <b>Street:</b>
+        <br />
+        <input type="text" @bind="_invoiceAddress.Street" />
+    }
+    else
+    {
+        <b>Company Name:</b>
+        <br />
+        @_invoiceAddress.CompanyName
+        <br />
+        <b>Email:</b>
+        <br />
+        @_invoiceAddress.Email
+        <br />
+        <b>Phone:</b>
+        <br />
+        @_invoiceAddress.Phone
+        <br />
+        <b>State:</b>
+        <br />
+        @_invoiceAddress.State
+        <br />
+        <b>City:</b>
+        <br />
+        @_invoiceAddress.City
+        <br />
+        <b>Street:</b>
+        <br />
+        @_invoiceAddress.Street
+    }
+}
+<br />
+<h1>Invoice items</h1>
+@if (_invoiceItemList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var invoiceItem in _invoiceItemList.InvoiceItems)
+            {
+                <tr>
+                    <td>@invoiceItem.Name</td>
+                    <td>@invoiceItem.Price</td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"invoice_items/{invoiceItem.Id}")">
+                            @invoiceItem.Id
+                        </NavLink>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private InvoiceItemListResponse? _invoiceItemList;
+    private Guid _invoiceAddressId;
+    private bool _isEditable = false;
+    private InvoiceAddressResponse? _invoiceAddress;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _invoiceAddressId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        await GetInvoiceAddress();
+        await GetInvoiceItems();
+    }
+
+    private async Task GetInvoiceAddress()
+    {
+        _invoiceAddress = await _invoiceAddressClient.Get(_invoiceAddressId);        
+    }
+
+    private void EditClick()
+    {
+        _isEditable = true;
+    }
+
+    private async Task UpdateClick()
+    {
+        InvoiceAddressUpdateRequest request = new()
+            {
+                Id = _invoiceAddress!.Id,
+                CompanyName = _invoiceAddress.CompanyName,
+                Email = _invoiceAddress.Email,
+                State = _invoiceAddress.State,
+                City = _invoiceAddress.City,
+                Street = _invoiceAddress.Street,
+
+            };
+        await _invoiceAddressClient.Update(request);
+
+        await GetInvoiceAddress();
+    }
+
+    private async Task DeleteClick()
+    {
+        await _invoiceAddressClient.Delete(_invoiceAddressId);
+        _navigationManager.NavigateTo("/invoice_addresses", false);
+    }
+
+    private async Task GetInvoiceItems()
+    {
+        InvoiceItemGetRequest request = new()
+            {
+                AddressId = _invoiceAddressId
+            };
+
+        _invoiceItemList = await _invoiceItemClient.Get(request);
+    }
+}

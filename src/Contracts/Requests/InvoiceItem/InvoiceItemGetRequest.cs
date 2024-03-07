@@ -2,5 +2,5 @@
 
 public record InvoiceItemGetRequest
 {
-    public Guid? ClientId { get; set; }
+    public Guid? AddressId { get; set; }
 }

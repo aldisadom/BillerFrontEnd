@@ -19,6 +19,7 @@
     <button @onclick="AddClick">Add</button>
     </div>      
 </div>
+
 <b>Email:</b>
 <br />
 <input type="text" @bind="_user.Email" />
@@ -35,14 +36,11 @@
 <br />
 <input type="text" @bind="_user.Password" />
 
-
-
 @code {
-    private UserAddRequest? _user;
+    private UserAddRequest _user = new();
 
     protected override async Task OnInitializedAsync()
     {
-        _user = new();
     }
 
     private async Task AddClick()

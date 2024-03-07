@@ -1,12 +1,15 @@
 ﻿@page "/users/{IdString}"
 @using Clients.Clients
 @using Clients.Interfaces
+@using Contracts.Requests.InvoiceAddress
 @using Contracts.Requests.User
+@using Contracts.Responses.InvoiceAddress
 @using Contracts.Responses.User
 @using Domain.Exceptions
 
-@inject NavigationManager _navigationManager
+@inject IInvoiceAddressClient _invoiceAddressClient
 @inject IUserClient _userClient
+@inject NavigationManager _navigationManager
 
 @attribute [StreamRendering]
 @rendermode InteractiveServer
@@ -66,10 +69,52 @@ else
         @_user.LastName
     }
 }
+<br />
+<h1>Invoice clients</h1>
+@if (invoiceAddressList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Company Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>State</th>
+                <th>City</th>
+                <th>Street</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var invoiceAddress in invoiceAddressList.InvoiceAddresss)
+            {
+                <tr>
+                    <td>@invoiceAddress.CompanyName</td>
+                    <td>@invoiceAddress.Email</td>
+                    <td>@invoiceAddress.Phone</td>
+                    <td>@invoiceAddress.State</td>
+                    <td>@invoiceAddress.City</td>
+                    <td>@invoiceAddress.Street</td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"invoice_addresses/{invoiceAddress.Id}")">
+                            @invoiceAddress.Id
+                        </NavLink>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
+    private InvoiceAddressListResponse? invoiceAddressList;
 
     private Guid _userId;
     private bool _isEditable = false;
@@ -83,6 +128,7 @@ else
         }
 
         await GetUser();
+        await GetInvoiceAddresss();
     }
 
     private async Task GetUser()
@@ -99,7 +145,7 @@ else
     {
         UserUpdateRequest request = new()
             {
-                Id = _user.Id,
+                Id = _user!.Id,
                 Name = _user.Name,
                 LastName = _user.LastName
             };
@@ -112,5 +158,15 @@ else
     {
         await _userClient.Delete(_userId);
         _navigationManager.NavigateTo("/users", false);
+    }
+
+    private async Task GetInvoiceAddresss()
+    {
+        InvoiceAddressGetRequest request = new()
+            {
+                UserId = _userId
+            };
+
+        invoiceAddressList = await _invoiceAddressClient.Get(request);
     }
 }
