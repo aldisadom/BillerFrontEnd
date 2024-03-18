@@ -32,6 +32,10 @@
 <br />
 <input type="number" step="0.01" @bind-value="_invoiceItem.Price" />
 <br />
+<b>Quantity:</b>
+<br />
+<input type="number" step="1" @bind-value="_invoiceItem.Quantity" />
+<br />
 
 @code {
     private InvoiceItemAddRequest _invoiceItem = new();

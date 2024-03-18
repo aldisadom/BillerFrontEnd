@@ -28,7 +28,8 @@ else
             <tr>
                 <th>Name</th>
                 <th>Price</th>
-                <th>Id</th>
+                <th>Quantity</th>
+                <th>Id</th>                
             </tr>
         </thead>
         <tbody>
@@ -37,6 +38,7 @@ else
                 <tr>                    
                     <td>@invoiceItem.Name</td>
                     <td>@invoiceItem.Price</td>
+                    <th>@invoiceItem.Quantity</th>
                     <td>
                         <NavLink class="nav-link" href="@($"invoice_items/{invoiceItem.Id}")">
                             @invoiceItem.Id

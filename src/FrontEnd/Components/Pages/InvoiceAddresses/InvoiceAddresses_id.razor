@@ -106,6 +106,7 @@ else
             <tr>
                 <th>Name</th>
                 <th>Price</th>
+                <th>Quantity</th>
                 <th>Id</th>
             </tr>
         </thead>
@@ -115,6 +116,7 @@ else
                 <tr>
                     <td>@invoiceItem.Name</td>
                     <td>@invoiceItem.Price</td>
+                    <td>@invoiceItem.Quantity</td>
                     <td>
                         <NavLink class="nav-link" href="@($"invoice_items/{invoiceItem.Id}")">
                             @invoiceItem.Id

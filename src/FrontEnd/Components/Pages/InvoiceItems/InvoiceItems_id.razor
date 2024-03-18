@@ -47,6 +47,10 @@ else
         <br />
         <input type="number" step="0.01" @bind-value="_invoiceItem.Price" />
         <br />
+        <b>Quantity:</b>
+        <br />
+        <input type="number" step="1" @bind-value="_invoiceItem.Quantity" />
+        <br />
     }
     else
     {
@@ -57,6 +61,10 @@ else
         <b>Price:</b>
         <br />
         @_invoiceItem.Price
+        <br />
+        <b>Quantity:</b>
+        <br />
+        @_invoiceItem.Quantity
         <br />
     }
 }
@@ -95,7 +103,8 @@ else
             {
                 Id = _invoiceItem!.Id,
                 Name = _invoiceItem.Name,
-                Price = _invoiceItem.Price
+                Price = _invoiceItem.Price,
+                Quantity = _invoiceItem.Quantity
 
             };
         await _invoiceItemClient.Update(request);
