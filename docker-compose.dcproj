@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerPublishLocally>False</DockerPublishLocally>
+    <ProjectGuid>98d52abf-7962-48db-82fb-f61d37e3a3b0</ProjectGuid>
+    <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
+    <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
+    <DockerServiceName>frontend</DockerServiceName>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="docker-compose.yml" />
+    <None Include=".dockerignore" />
+  </ItemGroup>
+</Project>

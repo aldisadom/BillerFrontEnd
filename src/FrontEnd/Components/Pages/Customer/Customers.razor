@@ -1,0 +1,82 @@
+﻿@page "/customers"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Responses.Customer
+
+@inject ICustomerClient _customerClient
+@inject NavigationManager _navigationManager
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice addresses</PageTitle>
+<div style="display: flex; align-items: center;">
+    <h1>Customers</h1>    
+    <div style="margin-left: 20px;">
+        <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+@if (customerList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Company name</th>
+                <th>Company number</th>
+                <th>Invoice name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>State</th>
+                <th>City</th>
+                <th>Street</th>
+                <th>SellerId</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in customerList.Customers)
+            {
+                <tr>
+                    <td>@customer.CompanyName</td>
+                    <td>@customer.CompanyNumber</td>
+                    <td>@customer.InvoiceName</td>
+                    <td>@customer.Email</td>
+                    <td>@customer.Phone</td>
+                    <td>@customer.State</td>
+                    <td>@customer.City</td>
+                    <td>@customer.Street</td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"sellers/{customer.SellerId}")">
+                            @customer.Id
+                        </NavLink>
+                    </td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"customers/{customer.Id}")">
+                            @customer.Id
+                        </NavLink>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private CustomerListResponse? customerList;
+
+    protected override async Task OnInitializedAsync()
+    {
+        customerList = await _customerClient.Get();
+    }
+
+    private void AddClick()
+    {
+        _navigationManager.NavigateTo($"/customers/add", false);
+    }
+}

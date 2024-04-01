@@ -2,6 +2,6 @@
 
 public class ClientsOptions
 {
-    public string UserUrl { get; set; } = string.Empty;
+    public string BillioUrl { get; set; } = string.Empty;
 }
 

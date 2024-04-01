@@ -1,0 +1,77 @@
+﻿@page "/sellers/add"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Seller
+@using Contracts.Responses
+@using Contracts.Responses.Seller
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject ISellerClient _sellerClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice address add</PageTitle>
+
+<div style="display: flex; align-items: center;">
+    <div style="margin-left: 20px;">
+    <button @onclick="AddClick">Add</button>
+    </div>      
+</div>
+
+<b>User Id:</b>
+<br />
+<input type="text" @bind="seller.UserId" />
+<br />
+<b>Company name:</b>
+<br />
+<input type="text" @bind="seller.CompanyName" />
+<br />
+<b>Company number:</b>
+<br />
+<input type="text" @bind="seller.CompanyNumber" />
+<br />
+<b>Email:</b>
+<br />
+<input type="text" @bind="seller.Email" />
+<br />
+<b>Phone:</b>
+<br />
+<input type="text" @bind="seller.Phone" />
+<br />
+<b>State:</b>
+<br />
+<input type="text" @bind="seller.State" />
+<br />
+<b>City:</b>
+<br />
+<input type="text" @bind="seller.City" />
+<br />
+<b>Street:</b>
+<br />
+<input type="text" @bind="seller.Street" />
+<br />
+<b>Bank name:</b>
+<br />
+<input type="text" @bind="seller.BankName" />
+<br />
+<b>Bank number:</b>
+<br />
+<input type="text" @bind="seller.BankNumber" />
+
+@code {
+    private SellerAddRequest seller = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    private async Task AddClick()
+    {
+        AddResponse response = await _sellerClient.Add(seller);
+        await _sellerClient.Get(response.Id);
+
+        _navigationManager.NavigateTo($"/sellers/{response.Id}", false);
+    }
+}

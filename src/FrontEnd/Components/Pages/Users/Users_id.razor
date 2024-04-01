@@ -1,13 +1,15 @@
 ﻿@page "/users/{IdString}"
 @using Clients.Clients
 @using Clients.Interfaces
-@using Contracts.Requests.InvoiceAddress
+@using Contracts.Requests.Customer
+@using Contracts.Requests.Seller
 @using Contracts.Requests.User
-@using Contracts.Responses.InvoiceAddress
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Seller
 @using Contracts.Responses.User
 @using Domain.Exceptions
 
-@inject IInvoiceAddressClient _invoiceAddressClient
+@inject ISellerClient _sellerClient
 @inject IUserClient _userClient
 @inject NavigationManager _navigationManager
 
@@ -15,7 +17,7 @@
 @rendermode InteractiveServer
 
 <PageTitle>User</PageTitle>
-@if (_user == null)
+@if (user == null)
 {
     <h1>User</h1>
     <p><em>Loading...</em></p>
@@ -23,8 +25,8 @@
 else
 {
     <div style="display: flex; align-items: center;">
-        <h1>@_user.Name</h1>
-        @if (_isEditable)
+        <h1>@user.Name</h1>
+        @if (isEditable)
         {
             <div style="margin-left: 20px;">
                 <button @onclick="UpdateClick">Update</button>
@@ -40,38 +42,38 @@ else
             </div>            
         }        
     </div>
-    @if (_isEditable)
+    @if (isEditable)
     {
         <b>Email:</b>
         <br />
-        @_user.Email
+        @user.Email
         <br />
         <b>Name:</b>
         <br />
-        <input type="text" @bind="_user.Name" />
+        <input type="text" @bind="user.Name" />
         <br />
         <b>LastName:</b>
         <br />
-        <input type="text" @bind="_user.LastName" />
+        <input type="text" @bind="user.LastName" />
     }
     else
     {
         <b>Email:</b>
         <br />
-        @_user.Email
+        @user.Email
         <br />
         <b>Name:</b>
         <br />
-        @_user.Name
+        @user.Name
         <br />        
         <b>LastName:</b>
         <br />
-        @_user.LastName
+        @user.LastName
     }
 }
 <br />
-<h1>Invoice clients</h1>
-@if (invoiceAddressList == null)
+<h1>Seller list</h1>
+@if (sellerList == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -90,18 +92,18 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var invoiceAddress in invoiceAddressList.InvoiceAddresss)
+            @foreach (var seller in sellerList.Sellers)
             {
                 <tr>
-                    <td>@invoiceAddress.CompanyName</td>
-                    <td>@invoiceAddress.Email</td>
-                    <td>@invoiceAddress.Phone</td>
-                    <td>@invoiceAddress.State</td>
-                    <td>@invoiceAddress.City</td>
-                    <td>@invoiceAddress.Street</td>
+                    <td>@seller.CompanyName</td>
+                    <td>@seller.Email</td>
+                    <td>@seller.Phone</td>
+                    <td>@seller.State</td>
+                    <td>@seller.City</td>
+                    <td>@seller.Street</td>
                     <td>
-                        <NavLink class="nav-link" href="@($"invoice_addresses/{invoiceAddress.Id}")">
-                            @invoiceAddress.Id
+                        <NavLink class="nav-link" href="@($"sellers/{seller.Id}")">
+                            @seller.Id
                         </NavLink>
                     </td>
 
@@ -114,59 +116,59 @@ else
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
-    private InvoiceAddressListResponse? invoiceAddressList;
+    private SellerListResponse? sellerList;
 
-    private Guid _userId;
-    private bool _isEditable = false;
-    private UserResponse? _user;
+    private Guid userId;
+    private bool isEditable = false;
+    private UserResponse? user;
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _userId))
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out userId))
         {
             throw new NotFoundException("Invalid id format");
         }
 
-        await GetUser();
-        await GetInvoiceAddresss();
+        await Get();
+        await GetSellers();
     }
 
-    private async Task GetUser()
+    private async Task Get()
     {
-        _user = await _userClient.Get(_userId);        
+        user = await _userClient.Get(userId);        
     }
 
     private void EditClick()
     {
-        _isEditable = true;
+        isEditable = true;
     }
 
     private async Task UpdateClick()
     {
         UserUpdateRequest request = new()
             {
-                Id = _user!.Id,
-                Name = _user.Name,
-                LastName = _user.LastName
+                Id = user!.Id,
+                Name = user.Name,
+                LastName = user.LastName
             };
         await _userClient.Update(request);
 
-        await GetUser();
+        await Get();
     }
 
     private async Task DeleteClick()
     {
-        await _userClient.Delete(_userId);
+        await _userClient.Delete(userId);
         _navigationManager.NavigateTo("/users", false);
     }
 
-    private async Task GetInvoiceAddresss()
+    private async Task GetSellers()
     {
-        InvoiceAddressGetRequest request = new()
+        SellerGetRequest request = new()
             {
-                UserId = _userId
+                UserId = userId
             };
 
-        invoiceAddressList = await _invoiceAddressClient.Get(request);
+        sellerList = await _sellerClient.Get(request);
     }
 }

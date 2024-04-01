@@ -1,0 +1,22 @@
+version: '3.4'
+
+services:
+  frontend:
+    image: ${DOCKER_REGISTRY-}frontend
+    build:
+      context: .
+      dockerfile: src/FrontEnd/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8090
+      - ASPNETCORE_HTTPS_PORTS=8091
+    ports:
+      - "8090"
+      - "8091"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+
+networks:
+  frontend:
+    name: billio_network  

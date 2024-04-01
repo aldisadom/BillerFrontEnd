@@ -22,22 +22,22 @@
 
 <b>Email:</b>
 <br />
-<input type="text" @bind="_user.Email" />
+<input type="text" @bind="user.Email" />
 <br />
 <b>Name:</b>
 <br />
-<input type="text" @bind="_user.Name" />
+<input type="text" @bind="user.Name" />
 <br />
 <b>LastName:</b>
 <br />
-<input type="text" @bind="_user.LastName" />
+<input type="text" @bind="user.LastName" />
 <br />
 <b>Password:</b>
 <br />
-<input type="text" @bind="_user.Password" />
+<input type="text" @bind="user.Password" />
 
 @code {
-    private UserAddRequest _user = new();
+    private UserAddRequest user = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -45,7 +45,7 @@
 
     private async Task AddClick()
     {
-        AddResponse response = await _userClient.Add(_user);
+        AddResponse response = await _userClient.Add(user);
         await _userClient.Get(response.Id);
 
         _navigationManager.NavigateTo($"/users/{response.Id}", false);

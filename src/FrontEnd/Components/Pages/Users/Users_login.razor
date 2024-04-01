@@ -16,11 +16,11 @@
 
 <b>Email:</b>
 <br />
-<input type="text" @bind="_user.Email" />
+<input type="text" @bind="user.Email" />
 <br />
 <b>Password:</b>
 <br />
-<input type="text" @bind="_user.Password" />
+<input type="text" @bind="user.Password" />
 <br />
 <div style="margin-left: 20px;">
     <button @onclick="LoginClick">Login</button>
@@ -31,16 +31,16 @@
 </div>
 
 @code {
-    private UserLoginRequest? _user;
+    private UserLoginRequest? user;
 
     protected override async Task OnInitializedAsync()
     {
-        _user = new();
+        user = new();
     }
 
     private async Task LoginClick()
     {
-        UserLoginResponse response = await _userClient.Login(_user);
+        UserLoginResponse response = await _userClient.Login(user);
     }
 
     private void CreateUserClick()

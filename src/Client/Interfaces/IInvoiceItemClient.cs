@@ -1,16 +1,15 @@
-﻿using Contracts.Requests.InvoiceItem;
+﻿using Contracts.Requests.Item;
 using Contracts.Responses;
-using Contracts.Responses.InvoiceItem;
+using Contracts.Responses.Item;
 
-namespace Clients.Interfaces
+namespace Clients.Interfaces;
+
+public interface IItemClient
 {
-    public interface IInvoiceItemClient
-    {
-        Task<AddResponse> Add(InvoiceItemAddRequest user);
-        Task Delete(Guid id);
-        Task<InvoiceItemListResponse> Get();
-        Task<InvoiceItemResponse?> Get(Guid id);
-        Task<InvoiceItemListResponse> Get(InvoiceItemGetRequest request);
-        Task Update(InvoiceItemUpdateRequest user);
-    }
+    Task<AddResponse> Add(ItemAddRequest item);
+    Task Delete(Guid id);
+    Task<ItemListResponse> Get();
+    Task<ItemResponse?> Get(Guid id);
+    Task<ItemListResponse> Get(ItemGetRequest request);
+    Task Update(ItemUpdateRequest item);
 }

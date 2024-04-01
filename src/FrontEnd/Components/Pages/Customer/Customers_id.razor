@@ -1,0 +1,211 @@
+﻿@page "/customers/{IdString}"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Customer
+@using Contracts.Requests.Item
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Item
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject ICustomerClient _customerClient
+@inject IItemClient _itemClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice address</PageTitle>
+@if (customer == null)
+{
+    <h1>Invoice address</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@customer.CompanyName</h1>
+        @if (isEditable)
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="UpdateClick">Update</button>
+            </div>
+            <div style="margin-left: 20px;">
+                <button @onclick="DeleteClick">Delete</button>
+            </div>
+        }
+        else
+        {
+            <div style="margin-left: 20px;">
+                <button @onclick="EditClick">Edit</button>
+            </div>            
+        }        
+    </div>
+
+    @if (isEditable)
+    {
+        <b>Company name:</b>
+        <br />
+        <input type="text" @bind="customer.CompanyName" />
+        <br />
+        <b>Company number:</b>
+        <br />
+        <input type="text" @bind="customer.CompanyNumber" />
+        <br />
+        <b>Invoice name:</b>
+        <br />
+        <input type="text" @bind="customer.InvoiceName" />
+        <br />
+        <b>Email:</b>
+        <br />
+        <input type="text" @bind="customer.Email" />
+        <br />
+        <b>Phone:</b>
+        <br />
+        <input type="text" @bind="customer.Phone" />
+        <br />
+        <b>State:</b>
+        <br />
+        <input type="text" @bind="customer.State" />
+        <br />
+        <b>City:</b>
+        <br />
+        <input type="text" @bind="customer.City" />
+        <br />
+        <b>Street:</b>
+        <br />
+        <input type="text" @bind="customer.Street" />
+    }
+    else
+    {
+        <b>Company name:</b>
+        <br />
+        @customer.CompanyName
+        <br />
+        <b>Company number:</b>
+        <br />
+        @customer.CompanyNumber
+        <br />
+        <b>Invoice name:</b>
+        <br />
+        @customer.InvoiceName
+        <br />
+        <b>Email:</b>
+        <br />
+        @customer.Email
+        <br />
+        <b>Phone:</b>
+        <br />
+        @customer.Phone
+        <br />
+        <b>State:</b>
+        <br />
+        @customer.State
+        <br />
+        <b>City:</b>
+        <br />
+        @customer.City
+        <br />
+        <b>Street:</b>
+        <br />
+        @customer.Street
+    }
+}
+<br />
+<h1>Invoice items</h1>
+@if (itemList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var invoiceItem in itemList.Items)
+            {
+                <tr>
+                    <td>@invoiceItem.Name</td>
+                    <td>@invoiceItem.Price</td>
+                    <td>@invoiceItem.Quantity</td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"items/{invoiceItem.Id}")">
+                            @invoiceItem.Id
+                        </NavLink>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private ItemListResponse? itemList;
+    private Guid customerId;
+    private bool isEditable = false;
+    private CustomerResponse? customer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out customerId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        await GetCustomer();
+        await GetItems();
+    }
+
+    private async Task GetCustomer()
+    {
+        customer = await _customerClient.Get(customerId);        
+    }
+
+    private void EditClick()
+    {
+        isEditable = true;
+    }
+
+    private async Task UpdateClick()
+    {
+        CustomerUpdateRequest request = new()
+            {
+                Id = customer!.Id,
+                CompanyName = customer.CompanyName,
+                Email = customer.Email,
+                State = customer.State,
+                City = customer.City,
+                Street = customer.Street,
+
+            };
+        await _customerClient.Update(request);
+
+        await GetCustomer();
+    }
+
+    private async Task DeleteClick()
+    {
+        await _customerClient.Delete(customerId);
+        _navigationManager.NavigateTo("/customers", false);
+    }
+
+    private async Task GetItems()
+    {
+        ItemGetRequest request = new()
+            {
+                CustomerId = customerId
+            };
+
+        itemList = await _itemClient.Get(request);
+    }
+}

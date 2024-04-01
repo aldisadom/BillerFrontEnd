@@ -1,0 +1,100 @@
+﻿@page "/sellers/user/{IdString}"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Seller
+@using Contracts.Responses.Seller
+@using Domain.Exceptions
+
+@inject ISellerClient _sellerClient
+@inject NavigationManager _navigationManager
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Sellers</PageTitle>
+<div style="display: flex; align-items: center;">
+    <h1>Sellers</h1>    
+    <div style="margin-left: 20px;">
+        <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+@if (sellerList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Company name</th>
+                <th>Company number</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>State</th>
+                <th>City</th>
+                <th>Street</th>
+                <th>Bank name</th>
+                <th>Bank number</th>
+                <th>Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var seller in sellerList.Sellers)
+            {
+                <tr>
+                    <td>@seller.CompanyName</td>
+                    <td>@seller.CompanyNumber</td>
+                    <td>@seller.Email</td>
+                    <td>@seller.Phone</td>
+                    <td>@seller.State</td>
+                    <td>@seller.City</td>
+                    <td>@seller.Street</td>
+                    <td>@seller.BankName</td>
+                    <td>@seller.BankNumber</td>
+                    <td>
+                        <NavLink class="nav-link" href="@($"sellers/{seller.Id}")">
+                            @seller.Id
+                        </NavLink>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private SellerListResponse? sellerList;
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid userId;
+    private bool isEditable = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out userId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        await Get();
+    }
+
+    private async Task Get()
+    {
+        SellerGetRequest request = new()
+        {
+            UserId = userId
+        }; 
+
+        sellerList = await _sellerClient.Get(request);
+    }
+
+    private void AddClick()
+    {
+        _navigationManager.NavigateTo($"/sellers/add", false);
+    }
+}

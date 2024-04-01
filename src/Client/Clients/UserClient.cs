@@ -13,10 +13,10 @@ public class UserClient : IUserClient
 
     public UserClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
     {
-        string userUrl = clientOptions.Value.UserUrl
-            ?? throw new ArgumentNullException($"User client URL is missing");
+        string billioUrl = clientOptions.Value.BillioUrl
+            ?? throw new ArgumentNullException($"Billio URL is missing");
 
-        _userHttpClient = new(httpClientFactory, userUrl);
+        _userHttpClient = new(httpClientFactory, billioUrl);
     }
 
     public async Task<UserLoginResponse> Login(UserLoginRequest user)

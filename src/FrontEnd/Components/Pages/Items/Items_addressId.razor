@@ -1,0 +1,88 @@
+﻿@page "/items/customer/{IdString}"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Item
+@using Contracts.Responses.Item
+@using Domain.Exceptions
+
+@inject IItemClient _itemClient
+@inject NavigationManager _navigationManager
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Items</PageTitle>
+<div style="display: flex; align-items: center;">
+    <h1>Items</h1>    
+    <div style="margin-left: 20px;">
+        <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+@if (itemList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Id</th>
+                <th>Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in itemList.Items)
+            {
+                <tr>                    
+                    <td>@item.Name</td>
+                    <td>@item.Price</td>
+                    <th>@item.Quantity</th>
+                    <td>
+                        <NavLink class="nav-link" href="@($"items/{item.Id}")">
+                            @item.Id
+                        </NavLink>
+                    </td>
+                    
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private ItemListResponse? itemList;
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid customerId;
+    private bool isEditable = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out customerId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        await Get();
+    }
+
+    private async Task Get()
+    {
+        ItemGetRequest request = new()
+        {
+            CustomerId = customerId
+        }; 
+
+        itemList = await _itemClient.Get(request);
+    }
+
+    private void AddClick()
+    {
+        _navigationManager.NavigateTo($"/items/add", false);
+    }
+}
