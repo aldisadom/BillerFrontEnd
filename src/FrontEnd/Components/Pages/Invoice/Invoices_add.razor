@@ -1,0 +1,144 @@
+﻿@page "/invoices"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Customer
+@using Contracts.Requests.InvoiceData
+@using Contracts.Requests.Item
+@using Contracts.Requests.Seller
+@using Contracts.Responses
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Item
+@using Contracts.Responses.Seller
+@using Contracts.Responses.User
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject IInvoiceClient _invoiceClient
+@inject IItemClient _itemClient
+@inject ISellerClient _sellerClient
+@inject ICustomerClient _customerClient
+@inject IUserClient _userClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice add</PageTitle>
+
+<div style="display: flex; align-items: center;">
+    <div style="margin-left: 20px;">
+        <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+<b>CustomerId:</b>
+<br />
+<input type="text" @bind="invoice.CustomerId" />
+<br />
+<div class="row">
+    <div class="col-lg-12 col-12 row">
+        <div class="col-md-3 col-lg-2">
+            <div style="display:@sellerFilter.selectedName; flex-direction: row; justify-content: center; align-items: center">
+                <span class="text-sm mb-0 text-capitalize font-weight-bold">Select seller</span>
+                &nbsp&nbsp
+                <select class="form-select" @onchange="@SellerChange">
+                    <option value=0>"-----"</option>
+                    @for (int i = 0; i < @sellerFilter.selection.Count; i++)
+                    {
+                        <option value=@(i+1)>@sellerFilter.selection.ElementAt(i).Value </option>
+                    }
+                </select>                
+            </div>
+            <div style="display:@customerFilter.selectedName; flex-direction: row; justify-content: center; align-items: center">
+                <span class="text-sm mb-0 text-capitalize font-weight-bold">Select customer</span>
+                &nbsp&nbsp
+                <select class="form-select" @onchange="@CustomerChange">
+                    <option value=0>"-----"</option>
+                    @for (int i = 0; i < @customerFilter.selection.Count; i++)
+                    {
+                        <option value=@(i+1)>@customerFilter.selection.ElementAt(i).Value </option>
+                    }
+                </select>
+            </div>
+            <div style="display:@itemFilter.selectedName; flex-direction: row; justify-content: center; align-items: center">
+                <span class="text-sm mb-0 text-capitalize font-weight-bold">Select item</span>
+                &nbsp&nbsp
+                <select class="form-select">
+                    <option value=0>"-----"</option>
+                    @for (int i = 0; i < @itemFilter.selection.Count; i++)
+                    {
+                        <option value=@(i+1)>@itemFilter.selection.ElementAt(i).Value </option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private class Appfilter
+    {
+        public int selectedId { get; set; }
+        public string selectedName { get; set; } = string.Empty;
+        public Guid selectedGuid { get; set; }
+        public Dictionary<Guid, string> selection {get; set; } = new();
+    }
+}
+
+@code {
+    private InvoiceDataAddRequest invoice = new();
+    private UserResponse? user;
+    private SellerListResponse? sellersList;
+    private CustomerListResponse? customersList;
+    private ItemListResponse? itemsList;
+
+    private Appfilter sellerFilter { get; set; } = new();
+    private Appfilter customerFilter { get; set; } = new();
+    private Appfilter itemFilter { get; set; } = new();
+
+    public async Task SellerChange(ChangeEventArgs args)
+    {
+        int selectedId = int.Parse(args.Value!.ToString()!);
+        sellerFilter.selectedId = selectedId;
+
+        CustomerGetRequest customerGetRequest = new() { SellerId = sellerFilter.selection.ElementAt(selectedId - 1).Key };
+        customersList = await _customerClient.Get(customerGetRequest);
+
+        customerFilter = new Appfilter();
+        foreach (var customer in customersList.Customers)
+            customerFilter.selection.Add(customer.Id, customer.CompanyName);
+    }
+
+    public async Task CustomerChange(ChangeEventArgs args)
+    {
+        int selectedId = int.Parse(args.Value!.ToString()!);
+        customerFilter.selectedId = selectedId;
+
+        ItemGetRequest itemGetRequest = new() { CustomerId = customerFilter.selection.ElementAt(selectedId - 1).Key };
+        itemsList = await _itemClient.Get(itemGetRequest);
+
+        itemFilter = new Appfilter();
+        foreach (var customer in itemsList.Items)
+            itemFilter.selection.Add(customer.Id, customer.Name);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Guid userId = Guid.Parse("34840efd-0036-42af-b686-3560cb8a0e84");
+
+        user = await _userClient.Get(userId);
+        SellerGetRequest sellerGetRequest = new() { UserId = userId };
+        sellersList = await _sellerClient.Get(sellerGetRequest);
+
+        sellerFilter = new Appfilter();
+        foreach (var seller in sellersList.Sellers)
+            sellerFilter.selection.Add(seller.Id, seller.CompanyName);
+    }
+
+    private async Task AddClick()
+    {
+        AddResponse response = await _invoiceClient.Add(invoice);
+        await _invoiceClient.Get(response.Id);
+
+        _navigationManager.NavigateTo($"/invoices/{response.Id}", false);
+    }
+}

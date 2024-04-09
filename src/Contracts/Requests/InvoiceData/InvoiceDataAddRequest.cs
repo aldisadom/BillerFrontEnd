@@ -2,7 +2,7 @@
 
 namespace Contracts.Requests.InvoiceData;
 
-public class InvoiceDataGenerateRequest
+public class InvoiceDataAddRequest
 {
     [Required]
     public Guid SellerId { get; set; }
@@ -12,5 +12,9 @@ public class InvoiceDataGenerateRequest
     public Guid UserId { get; set; }
     [Required]
     [MinLength(1)]
-    public List<Guid> ItemsId { get; set; } = new();
+    public List<InvoiceItemRequest> Items { get; set; } = new();
+    public string Comments { get; set; } = string.Empty;
+    [Required]
+    public DateTime DueDate { get; set; }
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
 }
