@@ -10,6 +10,7 @@ namespace Clients.Clients;
 public class InvoiceClient : IInvoiceClient
 {
     private readonly BaseHttpClient _userHttpClient;
+    private readonly string _controller = "invoices";
 
     public InvoiceClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
     {
@@ -21,7 +22,7 @@ public class InvoiceClient : IInvoiceClient
     /*
     public async Task<InvoiceDataListResponse> Get()
     {
-        return await _userHttpClient.GetAsync<InvoiceDataListResponse>("Invoice");
+        return await _userHttpClient.GetAsync<InvoiceDataListResponse>("{_controller}");
     }
 
     public async Task<InvoiceDataListResponse> Get(InvoiceDataGetRequest request)
@@ -30,26 +31,26 @@ public class InvoiceClient : IInvoiceClient
         {
             { "SellerId", request.SellerId.ToString()! }
         };
-        return await _userHttpClient.GetAsync<InvoiceDataListResponse>("Invoice", headers);
+        return await _userHttpClient.GetAsync<InvoiceDataListResponse>("{_controller}", headers);
     }
     */
     public async Task<InvoiceDataResponse?> Get(Guid id)
     {
-        return await _userHttpClient.GetAsync<InvoiceDataResponse>($"Invoice/{id}");
+        return await _userHttpClient.GetAsync<InvoiceDataResponse>($"{_controller}/{id}");
     }
 
     public async Task<AddResponse> Add(InvoiceDataAddRequest invoice)
     {
-        return await _userHttpClient.PostAsync<InvoiceDataAddRequest, AddResponse>($"Invoice", invoice);
+        return await _userHttpClient.PostAsync<InvoiceDataAddRequest, AddResponse>($"{_controller}", invoice);
     }
 
     public async Task Update(InvoiceDataUpdateRequest invoice)
     {
-        await _userHttpClient.PutAsync($"Invoice", invoice);
+        await _userHttpClient.PutAsync($"{_controller}", invoice);
     }
 
     public async Task Delete(Guid id)
     {
-        await _userHttpClient.DeleteAsync($"Invoice/{id}");
+        await _userHttpClient.DeleteAsync($"{_controller}/{id}");
     }
 }

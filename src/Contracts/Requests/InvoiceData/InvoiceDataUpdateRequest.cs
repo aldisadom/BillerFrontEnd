@@ -1,26 +1,23 @@
-﻿using Contracts.Responses.Customer;
-using Contracts.Responses.InvoiceData;
-using Contracts.Responses.Seller;
-using System;
-using System.Collections.Generic;
+﻿using Contracts.Requests.Customer;
+using Contracts.Requests.Seller;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Contracts.Requests.InvoiceData;
 
 public class InvoiceDataUpdateRequest
 {
-    public DateTime CreatedDate { get; set; }
+    public Guid Id { get; set; }
+    [Required]
+    public required SellerUpdateRequest Seller { get; set; }
+    [Required]
+    public required CustomerUpdateRequest Customer { get; set; }
+    [Required]
+    public Guid UserId { get; set; }
+    [Required]
+    [MinLength(1)]
+    public List<InvoiceItemUpdateRequest> Items { get; set; } = [];
+    public string Comments { get; set; } = string.Empty;
     [Required]
     public DateTime DueDate { get; set; }
-    [Required]
-    public SellerResponse Seller { get; set; }
-    [Required]
-    public CustomerResponse Customer { get; set; }
-    [Required]
-    public List<InvoiceItemResponse>? Items { get; set; }
-    public string? Comments { get; set; }
-    public decimal TotalPrice { get; set; }
+    public DateTime CreatedDate { get; set; } = DateTime.Now;
 }

@@ -10,6 +10,7 @@ namespace Clients.Clients;
 public class SellerClient : ISellerClient
 {
     private readonly BaseHttpClient _userHttpClient;
+    private readonly string _controller = "sellers";
 
     public SellerClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
     {
@@ -21,7 +22,7 @@ public class SellerClient : ISellerClient
 
     public async Task<SellerListResponse> Get()
     {
-        return await _userHttpClient.GetAsync<SellerListResponse>("Seller");
+        return await _userHttpClient.GetAsync<SellerListResponse>($"{_controller}");
     }
 
     public async Task<SellerListResponse> Get(SellerGetRequest request)
@@ -30,26 +31,26 @@ public class SellerClient : ISellerClient
         {
             { "UserId", request.UserId.ToString()! }
         };
-        return await _userHttpClient.GetAsync<SellerListResponse>("Seller", headers);
+        return await _userHttpClient.GetAsync<SellerListResponse>($"{_controller}", headers);
     }
 
     public async Task<SellerResponse?> Get(Guid id)
     {
-        return await _userHttpClient.GetAsync<SellerResponse>($"Seller/{id}");
+        return await _userHttpClient.GetAsync<SellerResponse>($"{_controller}/{id}");
     }
 
     public async Task<AddResponse> Add(SellerAddRequest seller)
     {
-        return await _userHttpClient.PostAsync<SellerAddRequest, AddResponse>($"Seller", seller);
+        return await _userHttpClient.PostAsync<SellerAddRequest, AddResponse>($"{_controller}", seller);
     }
 
     public async Task Update(SellerUpdateRequest seller)
     {
-        await _userHttpClient.PutAsync($"Seller", seller);
+        await _userHttpClient.PutAsync($"{_controller}", seller);
     }
 
     public async Task Delete(Guid id)
     {
-        await _userHttpClient.DeleteAsync($"Seller/{id}");
+        await _userHttpClient.DeleteAsync($"{_controller}/{id}");
     }
 }
