@@ -8,6 +8,7 @@
 @using Contracts.Responses.Seller
 @using Contracts.Responses.User
 @using Domain.Exceptions
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ISellerClient _sellerClient
 @inject IUserClient _userClient
@@ -25,102 +26,74 @@
 else
 {
     <div style="display: flex; align-items: center;">
-        <h1>@user.Name</h1>
-        @if (isEditable)
-        {
-            <div style="margin-left: 20px;">
-                <button @onclick="UpdateClick">Update</button>
-            </div>
-            <div style="margin-left: 20px;">
-                <button @onclick="DeleteClick">Delete</button>
-            </div>
-        }
-        else
-        {
-            <div style="margin-left: 20px;">
-                <button @onclick="EditClick">Edit</button>
-            </div>            
-        }        
+        <h1>@user!.Name</h1>        
+        <div style="margin-left: 20px;">
+            <button @onclick="EditClick">Edit</button>
+        </div>      
     </div>
-    @if (isEditable)
-    {
-        <b>Email:</b>
-        <br />
-        @user.Email
-        <br />
-        <b>Name:</b>
-        <br />
-        <input type="text" @bind="user.Name" />
-        <br />
-        <b>LastName:</b>
-        <br />
-        <input type="text" @bind="user.LastName" />
-    }
-    else
-    {
-        <b>Email:</b>
-        <br />
-        @user.Email
-        <br />
-        <b>Name:</b>
-        <br />
-        @user.Name
-        <br />        
-        <b>LastName:</b>
-        <br />
-        @user.LastName
-    }
+    <b>Email:</b>
+    <br />
+    @user.Email
+    <br />
+    <b>Name:</b>
+    <br />
+    @user.Name
+    <br />        
+    <b>LastName:</b>
+    <br />
+    @user.LastName    
 }
 <br />
-<h1>Seller list</h1>
+<div style="display: flex; align-items: center;">
+    <h1>Sellers:</h1>
+    <div style="margin-left: 20px;">
+        <button @onclick="AddSellerClick">Add</button>
+    </div>
+</div>
 @if (sellerList == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Company Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>State</th>
-                <th>City</th>
-                <th>Street</th>
-                <th>Id</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var seller in sellerList.Sellers)
-            {
-                <tr>
-                    <td>@seller.CompanyName</td>
-                    <td>@seller.Email</td>
-                    <td>@seller.Phone</td>
-                    <td>@seller.State</td>
-                    <td>@seller.City</td>
-                    <td>@seller.Street</td>
-                    <td>
-                        <NavLink class="nav-link" href="@($"sellers/{seller.Id}")">
-                            @seller.Id
-                        </NavLink>
-                    </td>
-
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@sellerQueryable" Pagination="pagination">
+                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
+                    <ColumnOptions>
+                        <div class="search-box">
+                            <input type="search" autofocus @onchange="SearchByName" placeholder="Seller name..." />
+                        </div>
+                    </ColumnOptions>
+                </PropertyColumn>
+                <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
+                <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
+                <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
+                <PropertyColumn Title="State" Property="@(i => i.State)" Align="Align.Right" />
+                <PropertyColumn Title="City" Property="@(i => i.City)" Align="Align.Right" />
+                <PropertyColumn Title="Street" Property="@(i => i.Street)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => EditSeller(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => DeleteSeller(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>    
 }
 
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
-    private SellerListResponse? sellerList;
 
     private Guid userId;
-    private bool isEditable = false;
     private UserResponse? user;
+
+    private SellerListResponse? sellerList;
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<SellerResponse> sellerQueryable = Enumerable.Empty<SellerResponse>().AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,32 +102,14 @@ else
             throw new NotFoundException("Invalid id format");
         }
 
-        await Get();
+        user = await _userClient.Get(userId);
         await GetSellers();
-    }
-
-    private async Task Get()
-    {
-        user = await _userClient.Get(userId);        
     }
 
     private void EditClick()
     {
-        isEditable = true;
-    }
-
-    private async Task UpdateClick()
-    {
-        UserUpdateRequest request = new()
-            {
-                Id = user!.Id,
-                Name = user.Name,
-                LastName = user.LastName
-            };
-        await _userClient.Update(request);
-
-        await Get();
-    }
+        _navigationManager.NavigateTo($"/users/update{IdString}", false);
+    }    
 
     private async Task DeleteClick()
     {
@@ -170,5 +125,27 @@ else
             };
 
         sellerList = await _sellerClient.Get(request);
+        sellerQueryable = sellerList.Sellers.AsQueryable();
+    }
+
+    void SearchByName(ChangeEventArgs e)
+    {
+
+    }
+
+    void EditSeller(SellerResponse item)
+    {
+        _navigationManager.NavigateTo($"/items/{item.Id}", false);
+    }
+
+    async Task DeleteSeller(SellerResponse item)
+    {
+        await _sellerClient.Delete(item.Id);
+        await GetSellers();
+    }
+
+    private void AddSellerClick()
+    {
+        _navigationManager.NavigateTo($"/sellers/add", false);
     }
 }

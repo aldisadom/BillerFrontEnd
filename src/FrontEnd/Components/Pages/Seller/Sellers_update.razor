@@ -1,0 +1,110 @@
+﻿@page "/sellers/update/{IdString}"
+@using AutoMapper
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Customer
+@using Contracts.Requests.Seller
+@using Contracts.Requests.Item
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Seller
+@using Contracts.Responses.Item
+@using Domain.Exceptions
+
+@inject NavigationManager _navigationManager
+@inject ISellerClient _sellerClient
+@inject ICustomerClient _customerClient
+@inject IMapper _mapper
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Seller update</PageTitle>
+@if (sellerUpdate == null)
+{
+    <h1>Seller</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@seller.CompanyName</h1>        
+        <div style="margin-left: 20px;">
+            <button @onclick="UpdateClick">Update</button>
+        </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="DeleteClick">Delete</button>
+        </div>
+            
+    </div>    
+    <b>Company name:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.CompanyName" />
+    <br />
+    <b>Company number:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.CompanyNumber" />
+    <br />
+    <b>Email:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.Email" />
+    <br />
+    <b>Phone:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.Phone" />
+    <br />
+    <b>State:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.State" />
+    <br />
+    <b>City:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.City" />
+    <br />
+    <b>Street:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.Street" />
+    <br />
+    <b>Bank name:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.BankName" />
+    <br />
+    <b>Bank number:</b>
+    <br />
+    <input type="text" @bind="sellerUpdate.BankNumber" />
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid sellerId;
+    private SellerResponse? seller;
+    private SellerUpdateRequest? sellerUpdate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out sellerId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        seller = await _sellerClient.Get(sellerId);
+        sellerUpdate = _mapper.Map<SellerUpdateRequest>(seller);
+    }
+
+    private async Task UpdateClick()
+    {
+        if (sellerUpdate == null)
+            return;
+
+        await _sellerClient.Update(sellerUpdate);
+
+        _navigationManager.NavigateTo($"/sellers/{sellerId}", false);
+    }
+
+    private async Task DeleteClick()
+    {
+        await _sellerClient.Delete(sellerId);
+        _navigationManager.NavigateTo("/sellers", false);
+    }
+}

@@ -2,6 +2,7 @@
 @using Clients.Clients
 @using Clients.Interfaces
 @using Contracts.Responses.Seller
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ISellerClient _sellerClient
 @inject NavigationManager _navigationManager
@@ -23,53 +24,69 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Company name</th>
-                <th>Company number</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>State</th>
-                <th>City</th>
-                <th>Street</th>
-                <th>Bank name</th>
-                <th>Bank number</th>
-                <th>Id</th>                
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var seller in sellerList.Sellers)
-            {
-                <tr>                    
-                    <td>@seller.CompanyName</td>
-                    <td>@seller.CompanyNumber</td>
-                    <td>@seller.Email</td>
-                    <td>@seller.Phone</td>
-                    <td>@seller.State</td>
-                    <td>@seller.City</td>
-                    <td>@seller.Street</td>
-                    <td>@seller.BankName</td>
-                    <td>@seller.BankNumber</td>
-                    <td>
-                        <NavLink class="nav-link" href="@($"sellers/{seller.Id}")">
-                            @seller.Id
-                        </NavLink>
-                    </td>
-                    
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+                        
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@SellersQueryable" Pagination="pagination">                            
+                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
+                    <ColumnOptions>
+                        <div class="search-box">
+                            <input type="search" autofocus @onchange="SearchByName" placeholder="Seller name..." />
+                        </div>
+                    </ColumnOptions>
+                </PropertyColumn>
+                <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
+                <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
+                <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
+                <PropertyColumn Title="State" Property="@(i => i.State)" Sortable="true" Align="Align.Right" />
+                <PropertyColumn Title="City" Property="@(i => i.City)" Sortable="true" Align="Align.Right" />
+                <PropertyColumn Title="Street" Property="@(i => i.Street)" Align="Align.Right" />
+                <PropertyColumn Title="Bank Name" Property="@(i => i.BankName)" Align="Align.Right" />
+                <PropertyColumn Title="Bank number" Property="@(i => i.BankNumber)" Align="Align.Right" />
+                <!--   <PropertyColumn Property="@(p => p.da)" Format="yyyy-MM-dd" Sortable="true" /> -->
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
 }
 
 @code {
     private SellerListResponse? sellerList;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    IQueryable<SellerResponse> SellersQueryable = Enumerable.Empty<SellerResponse>().AsQueryable();
+
+    async Task GetData()
+    {
+        sellerList = await _sellerClient.Get();
+        SellersQueryable = sellerList.Sellers.AsQueryable();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        sellerList = await _sellerClient.Get();
+        await GetData();
+    }    
+
+    void SearchByName(ChangeEventArgs e)
+    {
+       
     }
+
+    void Edit(SellerResponse seller)
+    {
+        _navigationManager.NavigateTo($"/sellers/{seller.Id}", false);
+    }
+
+    async Task Delete(SellerResponse seller)
+    {
+        await _sellerClient.Delete(seller.Id);
+        await GetData();
+    } 
 
     private void AddClick()
     {

@@ -1,0 +1,235 @@
+﻿@page "/invoices/add"
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Customer
+@using Contracts.Requests.Invoice
+@using Contracts.Requests.Item
+@using Contracts.Requests.Seller
+@using Contracts.Responses
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Item
+@using Contracts.Responses.Seller
+@using Contracts.Responses.User
+@using Domain.Exceptions
+@using Microsoft.Fast.Components.FluentUI
+@using Domain.Models
+
+@inject NavigationManager _navigationManager
+@inject IInvoiceClient _invoiceClient
+@inject IItemClient _itemClient
+@inject ISellerClient _sellerClient
+@inject ICustomerClient _customerClient
+@inject IUserClient _userClient
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice add</PageTitle>
+
+<div style="display: flex; align-items: center;">
+    <div style="margin-left: 20px;">
+        <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+<b>User Id:</b>
+<br />
+<input type="text" @bind="invoice.UserId" style="width: 400px;" />
+<br />
+<div class="row">
+    <div class="col-md-3">
+        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+            <b>Create date:</b>
+            <br />
+            <input type="date" @bind="invoice.CreatedDate" />
+        </div>
+        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+            <b>Due date:</b>
+            <br />
+            <input type="date" @bind="invoice.DueDate" />
+        </div>
+        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+            <b>Select seller:</b>
+            <select class="form-select" @bind="@sellerFilter.SelectedId">
+                @foreach (var filter in sellerFilter.SelectionList)
+                {
+                    <option value=@filter.Key>@filter.Value</option>
+                }
+            </select>
+            @if (sellerFilter.Changed())
+            {
+                Task.Run(async () => await SellerChange()).Wait();
+            }
+        </div>
+        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+            <b>Select customer:</b>
+            <select class="form-select" @bind="@customerFilter.SelectedId">
+                @foreach (var filter in customerFilter.SelectionList)
+                {
+                    <option value=@filter.Key>@filter.Value</option>
+                }
+            </select>
+            @if (customerFilter.Changed())
+            {
+                Task.Run(async () => await CustomerChange()).Wait();
+            }
+        </div>
+        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+            <b>Comment:</b>
+            <br />
+            <input type="text" @bind="invoice.Comments" />
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <td style="width:40%" >Items</td>
+                <td style="width:39%">Comment</td>
+                <td style="width:7%">Quantity</td>
+                <td style="width:7%">Unit price</td>
+                <td style="width:7%">Total price</td>
+            </tr>            
+        </thead>
+        <tbody>
+            @for (int z = 0; z < itemFilters.Count; z++)
+            {
+                int index = z;
+                <tr>
+                    <td>
+                        <select class="form-select" @bind="@itemFilters[index].SelectedId">
+                            @foreach (var filter in itemFilters[index].SelectionList)
+                            {
+                                <option value=@filter.Key>@filter.Value</option>
+                            }
+                        </select>
+                        @if (itemFilters[index].Changed())
+                        {
+                            ItemChange(index);
+                        }
+                    </td>
+                    @if (itemFilters[index].IsValid())
+                    {
+                        Guid id = itemFilters[index].SelectedId;
+                        ItemResponse item = itemsList!.Items.Find(i => i.Id == id)!;
+                        <td>
+                            <input type="text" @bind="invoice.Items[index].Comments" />
+                        </td>
+                        <td>
+                            <input type="decimal" @bind="invoice.Items[index].Quantity" />
+                        </td>
+                        decimal itemTotalPrice = item.Price * invoice.Items[index].Quantity;
+                        <td>
+                            @item.Price
+                        </td>
+                        <td>
+                            @itemTotalPrice
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private InvoiceAddRequest invoice = new();
+    private UserResponse? user;
+    private SellerListResponse? sellersList;
+    private CustomerListResponse? customersList;
+    private ItemListResponse? itemsList;
+
+    private AppFilter sellerFilter { get; set; } = new(false);
+    private AppFilter customerFilter { get; set; } = new(false);
+    private List<AppFilter> itemFilters { get; set; } = new();
+
+    public async Task SellerChange()
+    {
+        sellerFilter.UpdateSelected();
+
+        invoice.SellerId = sellerFilter.SelectedId;
+
+        CustomerGetRequest customerGetRequest = new() { SellerId = invoice.SellerId };
+        customersList = await _customerClient.Get(customerGetRequest);
+
+        customerFilter = new AppFilter(false);
+        foreach (var customer in customersList.Customers)
+            customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
+
+        customerFilter.SelectFirstFromList();
+        itemFilters.Clear();
+        invoice.Items.Clear();
+    }    
+
+    public async Task CustomerChange()
+    {
+        customerFilter.UpdateSelected();
+
+        invoice.CustomerId = customerFilter.SelectedId;
+
+        ItemGetRequest itemGetRequest = new() { CustomerId = invoice.CustomerId};
+        itemsList = await _itemClient.Get(itemGetRequest);
+
+        itemFilters.Clear();
+        invoice.Items.Clear();
+
+        itemFilters.Add(new AppFilter());
+
+        foreach (var item in itemsList.Items)
+            itemFilters[0].SelectionList.Add(item.Id, item.Name);
+    }
+
+    public void ItemChange(int index)
+    {              
+        itemFilters[index].UpdateSelected();
+        
+
+        if (!itemFilters[index].IsValid())
+        {
+            if (index != itemFilters.Count-1)
+            {
+                itemFilters.RemoveAt(index);
+                invoice.Items.RemoveAt(index);
+            }
+            return;
+        }
+
+        invoice.Items.Add(new InvoiceItemRequest());
+        invoice.Items[index].Id = itemFilters[index].SelectedId;
+
+        itemFilters.Add(new AppFilter());        
+        foreach (var item in itemsList!.Items)
+            itemFilters[itemFilters.Count-1].SelectionList.Add(item.Id, item.Name);
+            
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        invoice.UserId = Guid.Parse("34840efd-0036-42af-b686-3560cb8a0e84");
+        invoice.CreatedDate = DateTime.Now;
+        invoice.DueDate = invoice.CreatedDate.AddDays(7);
+
+        user = await _userClient.Get(invoice.UserId);
+        SellerGetRequest sellerGetRequest = new() { UserId = invoice.UserId };
+        sellersList = await _sellerClient.Get(sellerGetRequest);
+
+        foreach (var seller in sellersList.Sellers)
+            sellerFilter.SelectionList.Add(seller.Id, seller.CompanyName);
+
+        if (sellersList.Sellers.Count > 0)
+        {
+            invoice.SellerId = sellersList.Sellers[0].Id;
+            sellerFilter.SelectedId = invoice.SellerId;
+            await SellerChange();
+        }
+
+        invoice.CustomerId = customerFilter.SelectedId;
+    }
+
+    private async Task AddClick()
+    {
+        AddResponse response = await _invoiceClient.Add(invoice);
+        await _invoiceClient.Get(response.Id);
+
+        _navigationManager.NavigateTo($"/invoices/{response.Id}", false);
+    }
+}

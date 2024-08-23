@@ -8,6 +8,7 @@
 @using Contracts.Responses.Seller
 @using Contracts.Responses.Item
 @using Domain.Exceptions
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
 @inject ISellerClient _sellerClient
@@ -16,163 +17,108 @@
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
-<PageTitle>Invoice address</PageTitle>
+<PageTitle>Seller</PageTitle>
 @if (seller == null)
 {
-    <h1>Invoice address</h1>
+    <h1>Seller</h1>
     <p><em>Loading...</em></p>
 }
 else
 {
     <div style="display: flex; align-items: center;">
         <h1>@seller.CompanyName</h1>
-        @if (isEditable)
-        {
-            <div style="margin-left: 20px;">
-                <button @onclick="UpdateClick">Update</button>
-            </div>
-            <div style="margin-left: 20px;">
-                <button @onclick="DeleteClick">Delete</button>
-            </div>
-        }
-        else
-        {
-            <div style="margin-left: 20px;">
-                <button @onclick="EditClick">Edit</button>
-            </div>            
-        }        
+        <div style="margin-left: 20px;">
+            <button @onclick="EditClick">Edit</button>
+        </div>
     </div>
-    @if (isEditable)
-    {
-        <b>Company name:</b>
-        <br />
-        <input type="text" @bind="seller.CompanyName" />
-        <br />
-        <b>Company number:</b>
-        <br />
-        <input type="text" @bind="seller.CompanyNumber" />
-        <br />
-        <b>Email:</b>
-        <br />
-        <input type="text" @bind="seller.Email" />
-        <br />
-        <b>Phone:</b>
-        <br />
-        <input type="text" @bind="seller.Phone" />
-        <br />
-        <b>State:</b>
-        <br />
-        <input type="text" @bind="seller.State" />
-        <br />
-        <b>City:</b>
-        <br />
-        <input type="text" @bind="seller.City" />
-        <br />
-        <b>Street:</b>
-        <br />
-        <input type="text" @bind="seller.Street" />
-        <br />
-        <b>Bank name:</b>
-        <br />
-        <input type="text" @bind="seller.BankName" />
-        <br />
-        <b>Bank number:</b>
-        <br />
-        <input type="text" @bind="seller.BankNumber" />
-    }
-    else
-    {
-        <b>Company Name:</b>
-        <br />
-        @seller.CompanyName
-        <br />
-        <b>Company number:</b>
-        <br />
-        @seller.CompanyNumber
-        <br />
-        <b>Email:</b>
-        <br />
-        @seller.Email
-        <br />
-        <b>Phone:</b>
-        <br />
-        @seller.Phone
-        <br />
-        <b>State:</b>
-        <br />
-        @seller.State
-        <br />
-        <b>City:</b>
-        <br />
-        @seller.City
-        <br />
-        <b>Street:</b>
-        <br />
-        @seller.Street
-        <br />
-        <b>Bank name:</b>
-        <br />
-        @seller.BankName
-        <br />
-        <b>Bank number:</b>
-        <br />
-        @seller.BankNumber
-    }
+    <b>Company Name:</b>
+    <br />
+    @seller.CompanyName
+    <br />
+    <b>Company number:</b>
+    <br />
+    @seller.CompanyNumber
+    <br />
+    <b>Email:</b>
+    <br />
+    @seller.Email
+    <br />
+    <b>Phone:</b>
+    <br />
+    @seller.Phone
+    <br />
+    <b>State:</b>
+    <br />
+    @seller.State
+    <br />
+    <b>City:</b>
+    <br />
+    @seller.City
+    <br />
+    <b>Street:</b>
+    <br />
+    @seller.Street
+    <br />
+    <b>Bank name:</b>
+    <br />
+    @seller.BankName
+    <br />
+    <b>Bank number:</b>
+    <br />
+    @seller.BankNumber
 }
 <br />
-<h1>Client list</h1>
+<div style="display: flex; align-items: center;">
+    <h1>Clients:</h1>
+    <div style="margin-left: 20px;">
+        <button @onclick="AddCustomerClick">Add</button>
+    </div>
+</div>
 @if (customerList == null)
 {
     <p><em>Loading...</em></p>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Company name</th>
-                <th>Company number</th>
-                <th>Invoice name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>State</th>
-                <th>City</th>
-                <th>Street</th>
-                <th>Id</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var customer in customerList.Customers)
-            {
-                <tr>
-                    <td>@customer.CompanyName</td>
-                    <td>@customer.CompanyNumber</td>
-                    <td>@customer.InvoiceName</td>
-                    <td>@customer.Email</td>
-                    <td>@customer.Phone</td>
-                    <td>@customer.State</td>
-                    <td>@customer.City</td>
-                    <td>@customer.Street</td>                    
-                    <td>
-                        <NavLink class="nav-link" href="@($"customers/{customer.Id}")">
-                            @customer.Id
-                        </NavLink>
-                    </td>
-
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@customersQueryable" Pagination="pagination">
+                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
+                    <ColumnOptions>
+                        <div class="search-box">
+                            <input type="search" autofocus @onchange="SearchByName" placeholder="Customer name..." />
+                        </div>
+                    </ColumnOptions>
+                </PropertyColumn>
+                <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
+                <PropertyColumn Title="Invoice name" Property="@(i => i.InvoiceName)" Align="Align.Right" />
+                <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
+                <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
+                <PropertyColumn Title="State" Property="@(i => i.State)" Align="Align.Right" />
+                <PropertyColumn Title="City" Property="@(i => i.City)" Align="Align.Right" />
+                <PropertyColumn Title="Street" Property="@(i => i.Street)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => EditCustomer(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => DeleteCustomer(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
 }
 
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
+    
+    private Guid sellerId;
+    private SellerResponse? seller;
 
     private CustomerListResponse? customerList;
-    private Guid sellerId;
-    private bool isEditable = false;
-    private SellerResponse? seller;
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<CustomerResponse> customersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {
@@ -181,35 +127,13 @@ else
             throw new NotFoundException("Invalid id format");
         }
 
-        await GetSeller();
+        seller = await _sellerClient.Get(sellerId);
         await GetCustomers();
-    }
-
-    private async Task GetSeller()
-    {
-        seller = await _sellerClient.Get(sellerId);        
     }
 
     private void EditClick()
     {
-        isEditable = true;
-    }
-
-    private async Task UpdateClick()
-    {
-        SellerUpdateRequest request = new()
-            {
-                Id = seller!.Id,
-                CompanyName = seller.CompanyName,
-                Email = seller.Email,
-                State = seller.State,
-                City = seller.City,
-                Street = seller.Street,
-
-            };
-        await _sellerClient.Update(request);
-
-        await GetSeller();
+        _navigationManager.NavigateTo($"/sellers/update{IdString}", false);
     }
 
     private async Task DeleteClick()
@@ -226,5 +150,27 @@ else
             };
 
         customerList = await _customerClient.Get(request);
+        customersQueryable = customerList.Customers.AsQueryable();
+    }
+
+    void SearchByName(ChangeEventArgs e)
+    {
+
+    }
+
+    void EditCustomer(CustomerResponse item)
+    {
+        _navigationManager.NavigateTo($"/items/{item.Id}", false);
+    }
+
+    async Task DeleteCustomer(CustomerResponse item)
+    {
+        await _customerClient.Delete(item.Id);
+        await GetCustomers();
+    }
+
+    private void AddCustomerClick()
+    {
+        _navigationManager.NavigateTo($"/customers/add", false);
     }
 }

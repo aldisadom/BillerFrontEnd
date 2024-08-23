@@ -1,6 +1,7 @@
 using Clients;
 using Domain.IOptions;
 using FrontEnd.Components;
+using FrontEnd.Capabilities;
 
 namespace FrontEnd;
 
@@ -16,7 +17,9 @@ public class Program
         builder.Services.AddClients();
 
         // Add services to the container.
-        builder.Services.AddRazorComponents()
+        builder.Services
+            .ConfigureAutoMapper()
+            .AddRazorComponents()
             .AddInteractiveServerComponents();
 
         var app = builder.Build();

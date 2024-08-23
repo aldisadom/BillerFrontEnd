@@ -1,4 +1,5 @@
-﻿@page "/items/{IdString}"
+﻿@page "/items/update/{IdString}"
+@using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
 @using Contracts.Requests.Item
@@ -7,12 +8,13 @@
 
 @inject NavigationManager _navigationManager
 @inject IItemClient _itemClient
+@inject IMapper _mapper
 
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
-<PageTitle>Item</PageTitle>
-@if (item == null)
+<PageTitle>Item update</PageTitle>
+@if (itemUpdate == null)
 {
     <h1>Item</h1>
     <p><em>Loading...</em></p>
@@ -20,23 +22,26 @@
 else
 {
     <div style="display: flex; align-items: center;">
-        <h1>@item.Name</h1>
+        <h1>@itemUpdate.Name</h1>
         <div style="margin-left: 20px;">
-            <button @onclick="EditClick">Edit</button>
+            <button @onclick="UpdateClick">Update</button>
         </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="DeleteClick">Delete</button>
+        </div>                
     </div>
     <b>Name:</b>
     <br />
-    @item.Name
+    <input type="text" @bind="itemUpdate.Name" />
     <br />
     <b>Price:</b>
     <br />
-    @item.Price
+    <input type="number" step="0.01" @bind-value="itemUpdate.Price" />
     <br />
     <b>Quantity:</b>
     <br />
-    @item.Quantity
-    <br />    
+    <input type="number" step="1" @bind-value="itemUpdate.Quantity" />
+    <br />
 }
 
 @code {
@@ -45,6 +50,7 @@ else
 
     private Guid itemId;
     private ItemResponse? item;
+    private ItemUpdateRequest? itemUpdate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -54,11 +60,17 @@ else
         }
 
         item = await _itemClient.Get(itemId);
+        itemUpdate = _mapper.Map<ItemUpdateRequest>(item);
     }
 
-    private void EditClick()
+    private async Task UpdateClick()
     {
-        _navigationManager.NavigateTo($"/items/update{IdString}", false);
+        if (itemUpdate == null)
+            return;
+
+        await _itemClient.Update(itemUpdate);
+
+        _navigationManager.NavigateTo($"/items/{itemId}", false);
     }
 
     private async Task DeleteClick()

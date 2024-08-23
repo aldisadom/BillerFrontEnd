@@ -2,6 +2,7 @@
 @using Clients.Clients
 @using Clients.Interfaces
 @using Contracts.Responses.Item
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject IItemClient _itemClient
 @inject NavigationManager _navigationManager
@@ -11,7 +12,7 @@
 
 <PageTitle>Items</PageTitle>
 <div style="display: flex; align-items: center;">
-    <h1>Items</h1>    
+    <h1>Items</h1>
     <div style="margin-left: 20px;">
         <button @onclick="AddClick">Add</button>
     </div>
@@ -23,40 +24,60 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Id</th>                
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in itemList.Items)
-            {
-                <tr>                    
-                    <td>@item.Name</td>
-                    <td>@item.Price</td>
-                    <th>@item.Quantity</th>
-                    <td>
-                        <NavLink class="nav-link" href="@($"items/{item.Id}")">
-                            @item.Id
-                        </NavLink>
-                    </td>
-                    
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@ItemsQueryable" Pagination="pagination">
+                <PropertyColumn Title="Name" Property="@(i => i.Name)" Sortable="true" Align="Align.Left" Class=" country-name">
+                    <ColumnOptions>
+                        <div class="search-box">
+                            <input type="search" autofocus @onchange="SearchByName" placeholder="Item name..." />
+                        </div>
+                    </ColumnOptions>
+                </PropertyColumn>
+                <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
+                <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
 }
 
 @code {
     private ItemListResponse? itemList;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    IQueryable<ItemResponse> ItemsQueryable = Enumerable.Empty<ItemResponse>().AsQueryable();
+
+    async Task GetData()
+    {
+        itemList = await _itemClient.Get();
+        ItemsQueryable = itemList.Items.AsQueryable();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        itemList = await _itemClient.Get();
+        await GetData();
+    }
+
+    void SearchByName(ChangeEventArgs e)
+    {
+
+    }
+
+    void Edit(ItemResponse item)
+    {
+        _navigationManager.NavigateTo($"/items/{item.Id}", false);
+    }
+
+    async Task Delete(ItemResponse item)
+    {
+        await _itemClient.Delete(item.Id);
+        await GetData();
     }
 
     private void AddClick()
@@ -64,3 +85,4 @@ else
         _navigationManager.NavigateTo($"/items/add", false);
     }
 }
+

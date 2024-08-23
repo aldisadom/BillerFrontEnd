@@ -2,6 +2,7 @@
 @using Clients.Clients
 @using Clients.Interfaces
 @using Contracts.Responses.Customer
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ICustomerClient _customerClient
 @inject NavigationManager _navigationManager
@@ -23,57 +24,68 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Company name</th>
-                <th>Company number</th>
-                <th>Invoice name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>State</th>
-                <th>City</th>
-                <th>Street</th>
-                <th>SellerId</th>
-                <th>Id</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var customer in customerList.Customers)
-            {
-                <tr>
-                    <td>@customer.CompanyName</td>
-                    <td>@customer.CompanyNumber</td>
-                    <td>@customer.InvoiceName</td>
-                    <td>@customer.Email</td>
-                    <td>@customer.Phone</td>
-                    <td>@customer.State</td>
-                    <td>@customer.City</td>
-                    <td>@customer.Street</td>
-                    <td>
-                        <NavLink class="nav-link" href="@($"sellers/{customer.SellerId}")">
-                            @customer.Id
-                        </NavLink>
-                    </td>
-                    <td>
-                        <NavLink class="nav-link" href="@($"customers/{customer.Id}")">
-                            @customer.Id
-                        </NavLink>
-                    </td>
-
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+                        
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@CustomersQueryable" Pagination="pagination">                            
+                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
+                    <ColumnOptions>
+                        <div class="search-box">
+                            <input type="search" autofocus @onchange="SearchByName" placeholder="Customer name..." />
+                        </div>
+                    </ColumnOptions>
+                </PropertyColumn>
+                <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
+                <PropertyColumn Title="Invoice name" Property="@(i => i.InvoiceName)" Align="Align.Right" />
+                <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
+                <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
+                <PropertyColumn Title="State" Property="@(i => i.State)" Sortable="true" Align="Align.Right" />
+                <PropertyColumn Title="City" Property="@(i => i.City)" Sortable="true" Align="Align.Right" />
+                <PropertyColumn Title="Street" Property="@(i => i.Street)" Align="Align.Right" />
+                <PropertyColumn Title="Seller id" Property="@(i => i.SellerId)" Align="Align.Left" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
 }
 
 @code {
     private CustomerListResponse? customerList;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    IQueryable<CustomerResponse> CustomersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
+
+    async Task GetData()
+    {
+        customerList = await _customerClient.Get();
+        CustomersQueryable = customerList.Customers.AsQueryable();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        customerList = await _customerClient.Get();
+        await GetData();
+    }    
+
+    void SearchByName(ChangeEventArgs e)
+    {
+       
     }
+
+    void Edit(CustomerResponse customer)
+    {
+        _navigationManager.NavigateTo($"/customers/{customer.Id}", false);
+    }
+
+    async Task Delete(CustomerResponse customer)
+    {
+        await _customerClient.Delete(customer.Id);
+        await GetData();
+    } 
 
     private void AddClick()
     {
