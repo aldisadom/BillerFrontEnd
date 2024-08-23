@@ -66,8 +66,7 @@
     private async Task AddClick()
     {
         AddResponse response = await _customerClient.Add(customer);
-        await _customerClient.Get(response.Id);
-
+        
         _navigationManager.NavigateTo($"/customers/{response.Id}", false);
     }
 }

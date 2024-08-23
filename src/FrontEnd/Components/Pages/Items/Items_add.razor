@@ -48,8 +48,7 @@
     private async Task AddClick()
     {
         AddResponse response = await _itemClient.Add(item);
-        await _itemClient.Get(response.Id);
-
+        
         _navigationManager.NavigateTo($"/items/{response.Id}", false);
     }
 }

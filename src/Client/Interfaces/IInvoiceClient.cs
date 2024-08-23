@@ -1,14 +1,15 @@
-﻿using Contracts.Requests.InvoiceData;
+﻿using Contracts.Requests.Invoice;
 using Contracts.Responses;
-using Contracts.Responses.InvoiceData;
+using Contracts.Responses.Invoice;
 
 namespace Clients.Interfaces
 {
     public interface IInvoiceClient
     {
-        Task<AddResponse> Add(InvoiceDataAddRequest invoice);
+        Task<AddResponse> Add(InvoiceAddRequest item);
         Task Delete(Guid id);
-        Task<InvoiceDataResponse?> Get(Guid id);
-        Task Update(InvoiceDataUpdateRequest invoice);
+        Task<InvoiceListResponse> Get();
+        Task<InvoiceResponse?> Get(Guid id);
+        Task Update(InvoiceUpdateRequest item);
     }
 }

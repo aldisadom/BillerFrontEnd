@@ -15,7 +15,7 @@ public class UserClient : IUserClient
     public UserClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
     {
         string billioUrl = clientOptions.Value.BillioUrl
-            ?? throw new ArgumentNullException($"Billio URL is missing");
+            ?? throw new ArgumentNullException($"URL is missing {nameof(clientOptions.Value.BillioUrl)}");
 
         _userHttpClient = new(httpClientFactory, billioUrl);
     }

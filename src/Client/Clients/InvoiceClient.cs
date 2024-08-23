@@ -1,7 +1,7 @@
 ﻿using Clients.Interfaces;
-using Contracts.Requests.InvoiceData;
+using Contracts.Requests.Invoice;
 using Contracts.Responses;
-using Contracts.Responses.InvoiceData;
+using Contracts.Responses.Invoice;
 using Domain.IOptions;
 using Microsoft.Extensions.Options;
 
@@ -15,16 +15,16 @@ public class InvoiceClient : IInvoiceClient
     public InvoiceClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
     {
         string billioUrl = clientOptions.Value.BillioUrl
-            ?? throw new ArgumentNullException($"Billio URL is missing");
+            ?? throw new ArgumentNullException($"URL is missing {nameof(clientOptions.Value.BillioUrl)}");
 
         _userHttpClient = new(httpClientFactory, billioUrl);
     }
-    /*
-    public async Task<InvoiceDataListResponse> Get()
-    {
-        return await _userHttpClient.GetAsync<InvoiceDataListResponse>("{_controller}");
-    }
 
+    public async Task<InvoiceListResponse> Get()
+    {
+        return await _userHttpClient.GetAsync<InvoiceListResponse>($"{_controller}");
+    }
+    /*
     public async Task<InvoiceDataListResponse> Get(InvoiceDataGetRequest request)
     {
         Dictionary<string, string> headers = new()
@@ -34,17 +34,17 @@ public class InvoiceClient : IInvoiceClient
         return await _userHttpClient.GetAsync<InvoiceDataListResponse>("{_controller}", headers);
     }
     */
-    public async Task<InvoiceDataResponse?> Get(Guid id)
+    public async Task<InvoiceResponse?> Get(Guid id)
     {
-        return await _userHttpClient.GetAsync<InvoiceDataResponse>($"{_controller}/{id}");
+        return await _userHttpClient.GetAsync<InvoiceResponse>($"{_controller}/{id}");
     }
 
-    public async Task<AddResponse> Add(InvoiceDataAddRequest invoice)
+    public async Task<AddResponse> Add(InvoiceAddRequest invoice)
     {
-        return await _userHttpClient.PostAsync<InvoiceDataAddRequest, AddResponse>($"{_controller}", invoice);
+        return await _userHttpClient.PostAsync<InvoiceAddRequest, AddResponse>($"{_controller}", invoice);
     }
 
-    public async Task Update(InvoiceDataUpdateRequest invoice)
+    public async Task Update(InvoiceUpdateRequest invoice)
     {
         await _userHttpClient.PutAsync($"{_controller}", invoice);
     }

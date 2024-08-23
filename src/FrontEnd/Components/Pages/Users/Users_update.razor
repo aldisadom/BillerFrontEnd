@@ -1,0 +1,85 @@
+﻿@page "/users/update/{IdString}"
+@using AutoMapper
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Customer
+@using Contracts.Requests.Seller
+@using Contracts.Requests.User
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Seller
+@using Contracts.Responses.User
+@using Domain.Exceptions
+
+@inject ISellerClient _sellerClient
+@inject IUserClient _userClient
+@inject IMapper _mapper
+@inject NavigationManager _navigationManager
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>User update</PageTitle>
+@if (userUpdate == null)
+{
+    <h1>User</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@user!.Name</h1>
+        <div style="margin-left: 20px;">
+            <button @onclick="UpdateClick">Update</button>
+        </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="DeleteClick">Delete</button>
+        </div>       
+    </div>
+    <b>Email:</b>
+    <br />
+    @user.Email
+    <br />
+    <b>Name:</b>
+    <br />
+    <input type="text" @bind="userUpdate.Name" />
+    <br />
+    <b>LastName:</b>
+    <br />
+    <input type="text" @bind="userUpdate.LastName" />
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid userId;
+    private UserResponse? user;
+    private UserUpdateRequest? userUpdate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out userId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        user = await _userClient.Get(userId);
+        userUpdate = _mapper.Map<UserUpdateRequest>(user);
+    }
+
+    private async Task UpdateClick()
+    {
+        if (userUpdate == null)
+            return;
+
+        await _userClient.Update(userUpdate);
+
+        _navigationManager.NavigateTo($"/users/{userId}", false);
+    }
+
+    private async Task DeleteClick()
+    {
+        await _userClient.Delete(userId);
+        _navigationManager.NavigateTo("/users", false);
+    }
+}

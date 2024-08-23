@@ -1,0 +1,122 @@
+﻿@page "/invoices/{IdString}"
+@using AutoMapper
+@using Clients.Clients
+@using Clients.Interfaces
+@using Contracts.Requests.Customer
+@using Contracts.Requests.Invoice
+@using Contracts.Requests.Item
+@using Contracts.Requests.Seller
+@using Contracts.Responses.Customer
+@using Contracts.Responses.Invoice
+@using Contracts.Responses.Item
+@using Contracts.Responses.Seller
+@using Domain.Exceptions
+@using Domain.Models
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject NavigationManager _navigationManager
+@inject IInvoiceClient _invoiceClient
+@inject ICustomerClient _customerClient
+@inject ISellerClient _sellerClient
+@inject IItemClient _itemClient
+@inject IMapper _mapper
+
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<PageTitle>Invoice</PageTitle>
+
+@if (invoice == null)
+{
+    <h1>Invoice</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>Invoice</h1>        
+        <div style="margin-left: 20px;">
+            <button @onclick="EditClick">Edit</button>
+        </div>
+    </div>    
+    <b>Invoice number:</b>
+    <br />
+    @invoice.InvoiceNumber
+    <br />
+    <b>Date created:</b>
+    <br />
+    @invoice.CreatedDate
+    <br />
+    <b>Due date:</b>
+    <br />
+    @invoice.DueDate
+    <br />
+    <b>Comments:</b>
+    <br />
+    @invoice.Comments
+    <br />
+    <b>Seller name:</b>
+    <br />
+    @invoice.Seller!.CompanyName
+    <br />
+    <b>Customer name:</b>
+    <br />
+    @invoice.Customer!.CompanyName
+    <br />
+    <b>Items:</b>
+    <br />
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@itemsQueryable" Pagination="pagination">
+                <PropertyColumn Title="Name" Property="@(i => i.Name)" Sortable="true" Align="Align.Left" Class=" country-name">                    
+                </PropertyColumn>
+                <PropertyColumn Title="Comment" Property="@(i => i.Comments)" Align="Align.Right" />
+                <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
+                <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
+    <b>Total:</b>
+    <br />
+    decimal totalPrice = 0;
+    foreach (var item in invoice.Items!)
+        totalPrice += item.Price * item.Quantity;
+    <b>@totalPrice</b>
+    <br />
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid invoiceId;
+
+    private InvoiceResponse? invoice;
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<InvoiceItemResponse> itemsQueryable = Enumerable.Empty<InvoiceItemResponse>().AsQueryable();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out invoiceId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        invoice = await _invoiceClient.Get(invoiceId);
+        itemsQueryable = invoice!.Items!.AsQueryable();
+    }
+
+    private void EditClick()
+    {
+        _navigationManager.NavigateTo($"/invoices/update/{IdString}", false);
+    }
+    
+    private async Task DeleteClick()
+    {
+        await _invoiceClient.Delete(invoiceId);
+        _navigationManager.NavigateTo("/invoices", false);
+    }
+}

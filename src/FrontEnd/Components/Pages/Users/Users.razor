@@ -2,6 +2,7 @@
 @using Clients.Clients
 @using Clients.Interfaces
 @using Contracts.Responses.User
+@using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject IUserClient _userClient
 @inject NavigationManager _navigationManager
@@ -11,7 +12,7 @@
 
 <PageTitle>Users</PageTitle>
 <div style="display: flex; align-items: center;">
-    <h1>Users</h1>    
+    <h1>Users</h1>
     <div style="margin-left: 20px;">
         <button @onclick="AddClick">Add</button>
     </div>
@@ -23,40 +24,61 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>                
-                <th>Name</th>
-                <th>Last Name</th>
-                <th>Email</th>
-                <th>Id</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in userList.Users)
-            {
-                <tr>                    
-                    <td>@user.Name</td>
-                    <td>@user.LastName</td>
-                    <td>@user.Email</td>
-                    <td>
-                        <NavLink class="nav-link" href="@($"users/{user.Id}")">
-                            @user.Id
-                        </NavLink>
-                    </td>
-                    
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@UsersQueryable" Pagination="pagination">
+                <PropertyColumn Title="Email" Property="@(i => i.Email)" Sortable="true" Align="Align.Left" Class=" country-name">
+                    <ColumnOptions>
+                        <div class="search-box">
+                            <input type="search" autofocus @onchange="SearchByName" placeholder="User email..." />
+                        </div>
+                    </ColumnOptions>
+                </PropertyColumn>
+                <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Right" />
+                <PropertyColumn Title="Last name" Property="@(i => i.LastName)" Align="Align.Right" />                
+                <!--   <PropertyColumn Property="@(p => p.da)" Format="yyyy-MM-dd" Sortable="true" /> -->
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
 }
 
 @code {
     private UserListResponse? userList;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    IQueryable<UserResponse> UsersQueryable = Enumerable.Empty<UserResponse>().AsQueryable();
+
+    async Task GetData()
+    {
+        userList = await _userClient.Get();
+        UsersQueryable = userList.Users.AsQueryable();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        userList = await _userClient.Get();
+        await GetData();
+    }
+
+    void SearchByName(ChangeEventArgs e)
+    {
+
+    }
+
+    void Edit(UserResponse user)
+    {
+        _navigationManager.NavigateTo($"/users/{user.Id}", false);
+    }
+
+    async Task Delete(UserResponse user)
+    {
+        await _userClient.Delete(user.Id);
+        await GetData();
     }
 
     private void AddClick()
