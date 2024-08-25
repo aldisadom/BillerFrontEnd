@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Domain.Models;
+﻿namespace Domain.Models;
 
 public static class AppFilterHelper
 {
@@ -20,7 +14,7 @@ public class AppFilter
     public AppFilter(bool withInvalid = true)
     {
         SelectionList = [];
-        if (withInvalid )
+        if (withInvalid)
             SelectionList.Add(Guid.Empty, AppFilterHelper.InvalidName);
     }
 

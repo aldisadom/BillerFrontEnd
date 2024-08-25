@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Contracts.Requests.Invoice;
 using Contracts.Responses.Invoice;
-using Newtonsoft.Json;
 
 namespace FrontEnd.MappingProfiles;
 

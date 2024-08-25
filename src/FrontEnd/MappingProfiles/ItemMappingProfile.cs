@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using Contracts.Requests.Customer;
 using Contracts.Requests.Item;
-using Contracts.Responses.Customer;
 using Contracts.Responses.Item;
 
 namespace FrontEnd.MappingProfiles;

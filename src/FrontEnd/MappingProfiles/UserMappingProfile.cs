@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using Contracts.Requests.Seller;
 using Contracts.Requests.User;
-using Contracts.Responses.Seller;
 using Contracts.Responses.User;
 
 namespace FrontEnd.MappingProfiles;
