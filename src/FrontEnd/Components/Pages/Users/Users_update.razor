@@ -2,6 +2,7 @@
 @using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Seller
 @using Contracts.Requests.User
@@ -19,7 +20,15 @@
 @rendermode InteractiveServer
 
 <PageTitle>User update</PageTitle>
-@if (userUpdate == null)
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
+@if (_userUpdate == null)
 {
     <h1>User</h1>
     <p><em>Loading...</em></p>
@@ -27,7 +36,7 @@
 else
 {
     <div style="display: flex; align-items: center;">
-        <h1>@user!.Name</h1>
+        <h1>@_user!.Name</h1>
         <div style="margin-left: 20px;">
             <button @onclick="UpdateClick">Update</button>
         </div>
@@ -37,49 +46,66 @@ else
     </div>
     <b>Email:</b>
     <br />
-    @user.Email
+    @_user.Email
     <br />
     <b>Name:</b>
     <br />
-    <input type="text" @bind="userUpdate.Name" />
+    <input type="text" @bind="_userUpdate.Name" />
     <br />
     <b>LastName:</b>
     <br />
-    <input type="text" @bind="userUpdate.LastName" />
+    <input type="text" @bind="_userUpdate.LastName" />
 }
 
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
 
-    private Guid userId;
-    private UserResponse? user;
-    private UserUpdateRequest? userUpdate;
+    private Guid _userId;
+    private UserResponse? _user;
+    private UserUpdateRequest? _userUpdate;
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out userId))
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _userId))
         {
             throw new NotFoundException("Invalid id format");
         }
 
-        user = await _userClient.Get(userId);
-        userUpdate = _mapper.Map<UserUpdateRequest>(user);
+        var userResponse = await _userClient.Get(_userId);
+        bool sucess = userResponse.Match(
+            user =>
+            {
+                _user = user;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess)
+            return;
+
+        _userUpdate = _mapper.Map<UserUpdateRequest>(_user);
     }
 
     private async Task UpdateClick()
     {
-        if (userUpdate == null)
+        if (_userUpdate == null)
             return;
 
-        await _userClient.Update(userUpdate);
+        await _userClient.Update(_userUpdate);
 
-        _navigationManager.NavigateTo($"/users/{userId}", false);
+        _navigationManager.NavigateTo($"/users/{_userId}", false);
     }
 
     private async Task DeleteClick()
     {
-        await _userClient.Delete(userId);
+        await _userClient.Delete(_userId);
         _navigationManager.NavigateTo("/users", false);
     }
 }

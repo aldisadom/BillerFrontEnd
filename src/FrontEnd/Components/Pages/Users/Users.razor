@@ -1,6 +1,7 @@
 ﻿@page "/users"
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Responses.User
 @using Microsoft.AspNetCore.Components.QuickGrid
 
@@ -18,7 +19,15 @@
     </div>
 </div>
 
-@if (userList == null)
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
+@if (_userList == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -28,7 +37,7 @@ else
         <div class="card-header">
         </div>
         <div class="card-body">
-            <QuickGrid Items="@UsersQueryable" Pagination="pagination">
+            <QuickGrid Items="@_usersQueryable" Pagination="_pagination">
                 <PropertyColumn Title="Email" Property="@(i => i.Email)" Sortable="true" Align="Align.Left" Class=" country-name">
                     <ColumnOptions>
                         <div class="search-box">
@@ -45,19 +54,36 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+        <div class="card-footer"><Paginator State="@_pagination" /></div>
     </div>
 }
 
 @code {
-    private UserListResponse? userList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    IQueryable<UserResponse> UsersQueryable = Enumerable.Empty<UserResponse>().AsQueryable();
+    private UserListResponse? _userList;
+    private PaginationState _pagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<UserResponse> _usersQueryable = Enumerable.Empty<UserResponse>().AsQueryable();
+    private ErrorModel? _error;
 
     async Task GetData()
     {
-        userList = await _userClient.Get();
-        UsersQueryable = userList.Users.AsQueryable();
+        var userResponse = await _userClient.Get();
+        bool sucess = userResponse.Match(
+            users =>
+            {
+                _userList = users;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess || _userList is null)
+            return;
+
+        _usersQueryable = _userList.Users.AsQueryable();
     }
 
     protected override async Task OnInitializedAsync()

@@ -1,6 +1,7 @@
 ﻿@page "/sellers/{IdString}"
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Seller
 @using Contracts.Requests.Item
@@ -18,7 +19,15 @@
 @rendermode InteractiveServer
 
 <PageTitle>Seller</PageTitle>
-@if (seller == null)
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
+@if (_seller == null)
 {
     <h1>Seller</h1>
     <p><em>Loading...</em></p>
@@ -26,46 +35,46 @@
 else
 {
     <div style="display: flex; align-items: center;">
-        <h1>@seller.CompanyName</h1>
+        <h1>@_seller.CompanyName</h1>
         <div style="margin-left: 20px;">
             <button @onclick="EditClick">Edit</button>
         </div>
     </div>
     <b>Company Name:</b>
     <br />
-    @seller.CompanyName
+    @_seller.CompanyName
     <br />
     <b>Company number:</b>
     <br />
-    @seller.CompanyNumber
+    @_seller.CompanyNumber
     <br />
     <b>Email:</b>
     <br />
-    @seller.Email
+    @_seller.Email
     <br />
     <b>Phone:</b>
     <br />
-    @seller.Phone
+    @_seller.Phone
     <br />
     <b>State:</b>
     <br />
-    @seller.State
+    @_seller.State
     <br />
     <b>City:</b>
     <br />
-    @seller.City
+    @_seller.City
     <br />
     <b>Street:</b>
     <br />
-    @seller.Street
+    @_seller.Street
     <br />
     <b>Bank name:</b>
     <br />
-    @seller.BankName
+    @_seller.BankName
     <br />
     <b>Bank number:</b>
     <br />
-    @seller.BankNumber
+    @_seller.BankNumber
 }
 <br />
 <div style="display: flex; align-items: center;">
@@ -74,7 +83,7 @@ else
         <button @onclick="AddCustomerClick">Add</button>
     </div>
 </div>
-@if (customerList == null)
+@if (_customerList == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -84,7 +93,7 @@ else
         <div class="card-header">
         </div>
         <div class="card-body">
-            <QuickGrid Items="@customersQueryable" Pagination="pagination">
+            <QuickGrid Items="@_customersQueryable" Pagination="_pagination">
                 <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
                     <ColumnOptions>
                         <div class="search-box">
@@ -105,7 +114,7 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+        <div class="card-footer"><Paginator State="@_pagination" /></div>
     </div>
 }
 
@@ -113,21 +122,38 @@ else
     [Parameter]
     public string IdString { get; set; } = string.Empty;
     
-    private Guid sellerId;
-    private SellerResponse? seller;
+    private Guid _sellerId;
+    private SellerResponse? _seller;
 
-    private CustomerListResponse? customerList;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    private IQueryable<CustomerResponse> customersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
+    private CustomerListResponse? _customerList;
+    private PaginationState _pagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<CustomerResponse> _customersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out sellerId))
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _sellerId))
         {
             throw new NotFoundException("Invalid id format");
         }
 
-        seller = await _sellerClient.Get(sellerId);
+        var response = await _sellerClient.Get(_sellerId);
+        bool sucess = response.Match(
+            seller =>
+            {
+                _seller = seller;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess)
+            return;
+
         await GetCustomers();
     }
 
@@ -138,7 +164,7 @@ else
 
     private async Task DeleteClick()
     {
-        await _sellerClient.Delete(sellerId);
+        await _sellerClient.Delete(_sellerId);
         _navigationManager.NavigateTo("/sellers", false);
     }
 
@@ -146,11 +172,11 @@ else
     {
         CustomerGetRequest request = new()
             {
-                SellerId = sellerId
+                SellerId = _sellerId
             };
 
-        customerList = await _customerClient.Get(request);
-        customersQueryable = customerList.Customers.AsQueryable();
+        _customerList = await _customerClient.Get(request);
+        _customersQueryable = _customerList.Customers.AsQueryable();
     }
 
     void SearchByName(ChangeEventArgs e)

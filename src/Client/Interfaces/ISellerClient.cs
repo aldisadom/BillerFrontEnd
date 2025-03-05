@@ -1,4 +1,5 @@
-﻿using Contracts.Requests.Seller;
+﻿using Common;
+using Contracts.Requests.Seller;
 using Contracts.Responses;
 using Contracts.Responses.Seller;
 
@@ -6,10 +7,10 @@ namespace Clients.Interfaces;
 
 public interface ISellerClient
 {
-    Task<AddResponse> Add(SellerAddRequest seller);
-    Task Delete(Guid id);
-    Task<SellerListResponse> Get();
-    Task<SellerListResponse> Get(SellerGetRequest request);
-    Task<SellerResponse?> Get(Guid id);
-    Task Update(SellerUpdateRequest seller);
+    Task<Result<AddResponse>> Add(SellerAddRequest seller);
+    Task<Result<bool>> Delete(Guid id);
+    Task<Result<SellerListResponse>> Get();
+    Task<Result<SellerListResponse>> Get(SellerGetRequest request);
+    Task<Result<SellerResponse?>> Get(Guid id);
+    Task<Result<bool>> Update(SellerUpdateRequest seller);
 }

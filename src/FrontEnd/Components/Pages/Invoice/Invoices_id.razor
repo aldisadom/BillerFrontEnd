@@ -2,6 +2,7 @@
 @using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Invoice
 @using Contracts.Requests.Item
@@ -25,7 +26,14 @@
 @rendermode InteractiveServer
 
 <PageTitle>Invoice</PageTitle>
-
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
 @if (invoice == null)
 {
     <h1>Invoice</h1>
@@ -69,7 +77,7 @@ else
         <div class="card-header">
         </div>
         <div class="card-body">
-            <QuickGrid Items="@itemsQueryable" Pagination="pagination">
+            <QuickGrid Items="@itemsQueryable" Pagination="_pagination">
                 <PropertyColumn Title="Name" Property="@(i => i.Name)" Sortable="true" Align="Align.Left" Class=" country-name">                    
                 </PropertyColumn>
                 <PropertyColumn Title="Comment" Property="@(i => i.Comments)" Align="Align.Right" />
@@ -77,7 +85,7 @@ else
                 <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+        <div class="card-footer"><Paginator State="@_pagination" /></div>
     </div>
     <b>Total:</b>
     <br />
@@ -95,8 +103,9 @@ else
     private Guid invoiceId;
 
     private InvoiceResponse? invoice;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    private PaginationState _pagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<InvoiceItemResponse> itemsQueryable = Enumerable.Empty<InvoiceItemResponse>().AsQueryable();
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {

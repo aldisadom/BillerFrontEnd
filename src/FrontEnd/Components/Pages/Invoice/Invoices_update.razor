@@ -2,6 +2,7 @@
 @using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Invoice
 @using Contracts.Requests.Item
@@ -24,8 +25,15 @@
 @rendermode InteractiveServer
 
 <PageTitle>Invoice</PageTitle>
-
-@if (invoiceUpdate == null)
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
+@if (_invoiceUpdate == null)
 {
     <h1>Invoice</h1>
     <p><em>Loading...</em></p>
@@ -43,41 +51,41 @@ else
     </div>    
     <b>Invoice number:</b>
     <br />
-    <input type="number" @bind="invoiceUpdate.InvoiceNumber" />
+    <input type="number" @bind="_invoiceUpdate.InvoiceNumber" />
     <br />
     <b>Date created:</b>
     <br />
-    <input type="date" @bind="invoiceUpdate.CreatedDate" />
+    <input type="date" @bind="_invoiceUpdate.CreatedDate" />
     <br />
     <b>Due date:</b>
     <br />
-    <input type="date" @bind="invoiceUpdate.DueDate" />
+    <input type="date" @bind="_invoiceUpdate.DueDate" />
     <br />
     <b>Comments:</b>
     <br />
-    <input type="text" @bind="invoiceUpdate.Comments" />
+    <input type="text" @bind="_invoiceUpdate.Comments" />
     <br />
     <b>Seller name:</b>
     <br />
-    <select class="form-select" @bind="@sellerFilter.SelectedId">
-        @foreach (var filter in sellerFilter.SelectionList) 
+    <select class="form-select" @bind="@_sellerFilter.SelectedId">
+        @foreach (var filter in _sellerFilter.SelectionList) 
         {
             <option value=@filter.Key>@filter.Value</option>
         }
     </select>
-    if (sellerFilter.Changed())
+    if (_sellerFilter.Changed())
     {
         Task.Run(async () => await SellerChange()).Wait();
     }        
     <b>Customer name:</b>
     <br />
-    <select class="form-select" @bind="@customerFilter.SelectedId">
-        @foreach (var filter in customerFilter.SelectionList)
+    <select class="form-select" @bind="@_customerFilter.SelectedId">
+        @foreach (var filter in _customerFilter.SelectionList)
         {
             <option value=@filter.Key>@filter.Value</option>
         }
     </select>
-    if (customerFilter.Changed())
+    if (_customerFilter.Changed())
     {
         Task.Run(async () => await CustomerChange()).Wait();
     }
@@ -94,33 +102,33 @@ else
             </tr>
         </thead>
         <tbody>
-            @for (int z = 0; z < itemFilters.Count; z++)
+            @for (int z = 0; z < _itemFilters.Count; z++)
             {
                 int index = z;
                 <tr>
                     <td>
-                        <select class="form-select" @bind="@itemFilters[index].SelectedId">
-                            @foreach (var filter in itemFilters[index].SelectionList)
+                        <select class="form-select" @bind="@_itemFilters[index].SelectedId">
+                            @foreach (var filter in _itemFilters[index].SelectionList)
                             {
                                 <option value=@filter.Key>@filter.Value</option>
                             }
                         </select>
-                        @if (itemFilters[index].Changed())
+                        @if (_itemFilters[index].Changed())
                         {
                             ItemChange(index);
                         }
                     </td>
-                    @if (itemFilters[index].IsValid())
+                    @if (_itemFilters[index].IsValid())
                     {
-                        Guid id = itemFilters[index].SelectedId;
-                        ItemResponse item = itemsList!.Items.Find(i => i.Id == id)!;
+                        Guid id = _itemFilters[index].SelectedId;
+                        ItemResponse item = _itemsList!.Items.Find(i => i.Id == id)!;
                         <td>
-                            <input type="text" @bind="invoiceUpdate.Items[index].Comments" />
+                            <input type="text" @bind="_invoiceUpdate.Items[index].Comments" />
                         </td>
                         <td>
-                            <input type="decimal" @bind="invoiceUpdate.Items[index].Quantity" />
+                            <input type="decimal" @bind="_invoiceUpdate.Items[index].Quantity" />
                         </td>
-                        decimal itemTotalPrice = item.Price * invoiceUpdate.Items[index].Quantity;
+                        decimal itemTotalPrice = item.Price * _invoiceUpdate.Items[index].Quantity;
                         <td>
                             @item.Price
                         </td>
@@ -135,7 +143,7 @@ else
     <b>Total:</b>
     <br />
     decimal totalPrice = 0;
-    foreach (var item in invoiceUpdate.Items)
+    foreach (var item in _invoiceUpdate.Items)
         totalPrice += item.Price * item.Quantity;
     <b>@totalPrice</b>
     <br /> 
@@ -145,145 +153,191 @@ else
     [Parameter]
     public string IdString { get; set; } = string.Empty;
 
-    private Guid invoiceId;
+    private Guid _invoiceId;
 
-    private InvoiceResponse? invoice;
-    private InvoiceUpdateRequest? invoiceUpdate;
+    private InvoiceResponse? _invoice;
+    private InvoiceUpdateRequest? _invoiceUpdate;
 
-    private SellerListResponse? sellersList;
-    private CustomerListResponse? customersList;
-    private ItemListResponse? itemsList;
+    private SellerListResponse? _sellersList;
+    private CustomerListResponse? _customersList;
+    private ItemListResponse? _itemsList;
 
-    private AppFilter sellerFilter { get; set; } = new();
-    private AppFilter customerFilter { get; set; } = new();
-    private List<AppFilter> itemFilters { get; set; } = new();
+    private AppFilter _sellerFilter { get; set; } = new();
+    private AppFilter _customerFilter { get; set; } = new();
+    private List<AppFilter> _itemFilters { get; set; } = new();
+    private ErrorModel? _error;
 
     public async Task SellerChange()
     {
-        sellerFilter.UpdateSelected();
+        _sellerFilter.UpdateSelected();
 
-        invoiceUpdate!.Seller = _mapper.Map<SellerUpdateRequest>(await _sellerClient.Get(sellerFilter.SelectedId));
-        invoiceUpdate!.Customer = new CustomerUpdateRequest();
-        invoiceUpdate!.Items.Clear();
+        _invoiceUpdate!.Seller = _mapper.Map<SellerUpdateRequest>(await _sellerClient.Get(_sellerFilter.SelectedId));
+        _invoiceUpdate!.Customer = new CustomerUpdateRequest();
+        _invoiceUpdate!.Items.Clear();
 
-        CustomerGetRequest customerGetRequest = new() { SellerId = invoiceUpdate!.Seller.Id };
-        customersList = await _customerClient.Get(customerGetRequest);
+        CustomerGetRequest customerGetRequest = new() { SellerId = _invoiceUpdate!.Seller.Id };
+        _customersList = await _customerClient.Get(customerGetRequest);
 
-        customerFilter = new AppFilter(false);
-        foreach (var customer in customersList.Customers)
-            customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
+        _customerFilter = new AppFilter(false);
+        foreach (var customer in _customersList.Customers)
+            _customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
     }
     public async Task CustomerChange()
     {
-        customerFilter.UpdateSelected();
+        _customerFilter.UpdateSelected();
 
-        invoiceUpdate!.Customer = _mapper.Map<CustomerUpdateRequest>(await _customerClient.Get(customerFilter.SelectedId));
-        invoiceUpdate!.Items.Clear();
+        _invoiceUpdate!.Customer = _mapper.Map<CustomerUpdateRequest>(await _customerClient.Get(_customerFilter.SelectedId));
+        _invoiceUpdate!.Items.Clear();
 
-        ItemGetRequest itemGetRequest = new() { CustomerId = invoiceUpdate!.Customer.Id };
-        itemsList = await _itemClient.Get(itemGetRequest);
+        ItemGetRequest itemGetRequest = new() { CustomerId = _invoiceUpdate!.Customer.Id };
+        _itemsList = await _itemClient.Get(itemGetRequest);
 
-        itemFilters = new List<AppFilter>();
-        itemFilters.Add(new AppFilter());
-        foreach (var item in itemsList.Items)
-            itemFilters[0].SelectionList.Add(item.Id, item.Name);
+        _itemFilters = new List<AppFilter>();
+        _itemFilters.Add(new AppFilter());
+        foreach (var item in _itemsList.Items)
+            _itemFilters[0].SelectionList.Add(item.Id, item.Name);
     }
 
     public void ItemChange(int index)
     {        
-        bool add = itemFilters[index].WasUnselected();
-        Guid selectedId = itemFilters[index].SelectedId;
-        ItemResponse itemSelected = itemsList!.Items.Find(i => i.Id == selectedId)!;
+        bool add = _itemFilters[index].WasUnselected();
+        Guid selectedId = _itemFilters[index].SelectedId;
+        ItemResponse itemSelected = _itemsList!.Items.Find(i => i.Id == selectedId)!;
 
-        itemFilters[index].UpdateSelected();
+        _itemFilters[index].UpdateSelected();
 
-        if (!itemFilters[index].IsValid())
+        if (!_itemFilters[index].IsValid())
         {
-            if (index == itemFilters.Count - 1)
+            if (index == _itemFilters.Count - 1)
                 return;
 
-            itemFilters.RemoveAt(index);
-            invoiceUpdate!.Items.RemoveAt(index);
+            _itemFilters.RemoveAt(index);
+            _invoiceUpdate!.Items.RemoveAt(index);
         }  
         
         if (add)
-            invoiceUpdate!.Items.Add(new InvoiceItemUpdateRequest());
+            _invoiceUpdate!.Items.Add(new InvoiceItemUpdateRequest());
         
-        invoiceUpdate!.Items[index].Id = selectedId;
-        invoiceUpdate!.Items[index].Price = itemSelected.Price;
-        invoiceUpdate!.Items[index].Name = itemSelected.Name;
+        _invoiceUpdate!.Items[index].Id = selectedId;
+        _invoiceUpdate!.Items[index].Price = itemSelected.Price;
+        _invoiceUpdate!.Items[index].Name = itemSelected.Name;
 
         if (add)
         {
-            itemFilters.Add(new AppFilter());
-            foreach (var item in itemsList!.Items)
-                itemFilters[itemFilters.Count - 1].SelectionList.Add(item.Id, item.Name);
+            _itemFilters.Add(new AppFilter());
+            foreach (var item in _itemsList!.Items)
+                _itemFilters[_itemFilters.Count - 1].SelectionList.Add(item.Id, item.Name);
         }            
     }
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out invoiceId))
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _invoiceId))
         {
             throw new NotFoundException("Invalid id format");
         }
 
-        invoice = await _invoiceClient.Get(invoiceId);
-        invoiceUpdate = _mapper.Map<InvoiceUpdateRequest>(invoice);
+        _invoice = await _invoiceClient.Get(_invoiceId);
+        _invoiceUpdate = _mapper.Map<InvoiceUpdateRequest>(_invoice);
 
-        await GetSellers(invoice!.UserId);
-        await GetCustomers(invoice!.Seller!.Id);        
-        await GetItems(invoice!.Customer!.Id);
+        await GetSellers(_invoice!.UserId);
+        await GetCustomers(_invoice!.Seller!.Id);        
+        await GetItems(_invoice!.Customer!.Id);
 
-        sellerFilter = new AppFilter(false);
-        foreach (var seller in sellersList!.Sellers)
-            sellerFilter.SelectionList.Add(seller.Id, seller.CompanyName);
+        _sellerFilter = new AppFilter(false);
+        foreach (var seller in _sellersList!.Sellers)
+            _sellerFilter.SelectionList.Add(seller.Id, seller.CompanyName);
 
-        sellerFilter.UpdateSelected(invoice!.Seller!.Id);
+        _sellerFilter.UpdateSelected(_invoice!.Seller!.Id);
 
-        customerFilter = new AppFilter(false);
-        foreach (var customer in customersList!.Customers)
-            customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
+        _customerFilter = new AppFilter(false);
+        foreach (var customer in _customersList!.Customers)
+            _customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
 
-        customerFilter.UpdateSelected(invoice!.Customer!.Id);
+        _customerFilter.UpdateSelected(_invoice!.Customer!.Id);
 
-        itemFilters = new List<AppFilter>();
-        for (int i = 0; i < invoice!.Items!.Count + 1; i++)
+        _itemFilters = new List<AppFilter>();
+        for (int i = 0; i < _invoice!.Items!.Count + 1; i++)
         {
-            itemFilters.Add(new AppFilter());
-            foreach (var item in itemsList!.Items)
-                itemFilters[i].SelectionList.Add(item.Id, item.Name);
+            _itemFilters.Add(new AppFilter());
+            foreach (var item in _itemsList!.Items)
+                _itemFilters[i].SelectionList.Add(item.Id, item.Name);
         }
 
-        for (int i = 0; i < invoice!.Items!.Count; i++)
-            itemFilters[i].UpdateSelected(invoice!.Items[i].Id);
+        for (int i = 0; i < _invoice!.Items!.Count; i++)
+            _itemFilters[i].UpdateSelected(_invoice!.Items[i].Id);
     }
 
     private async Task GetSellers(Guid userId)
     {
-        sellersList = await _sellerClient.Get(new SellerGetRequest() { UserId = userId });
+        var response = await _sellerClient.Get(new SellerGetRequest() { UserId = userId });
+        var sucess = response.Match(
+            sellers =>
+            {
+                _sellersList = sellers;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess || _sellersList is null)
+            return;
     }
 
     private async Task GetCustomers(Guid sellerId)
     {
-        customersList = await _customerClient.Get(new CustomerGetRequest() { SellerId = sellerId });
+        var response = await _customerClient.Get(new CustomerGetRequest() { SellerId = sellerId });
+        var sucess = response.Match(
+            customers =>
+            {
+                _customersList = customers;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess || _customersList is null)
+            return;
     }    
 
     private async Task GetItems(Guid customerId)
     {
-        itemsList = await _itemClient.Get(new ItemGetRequest() { CustomerId = customerId });
+        var response = await _itemClient.Get(new ItemGetRequest() { CustomerId = customerId });
+        var sucess = response.Match(
+            items =>
+            {
+                _itemsList = items;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess || _itemsList is null)
+            return;
     }
 
     private async Task UpdateClick()
     {        
-        await _invoiceClient.Update(invoiceUpdate!);
+        await _invoiceClient.Update(_invoiceUpdate!);
 
-        _navigationManager.NavigateTo($"/invoices/{invoiceId}", false);
+        _navigationManager.NavigateTo($"/invoices/{_invoiceId}", false);
     }
 
     private async Task DeleteClick()
     {
-        await _invoiceClient.Delete(invoiceId);
+        await _invoiceClient.Delete(_invoiceId);
         _navigationManager.NavigateTo("/invoices", false);
     }
 }

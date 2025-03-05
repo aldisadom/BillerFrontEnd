@@ -1,9 +1,8 @@
 ﻿using Clients.Interfaces;
+using Common;
 using Contracts.Requests.Invoice;
 using Contracts.Responses;
 using Contracts.Responses.Invoice;
-using Domain.IOptions;
-using Microsoft.Extensions.Options;
 
 namespace Clients.Clients;
 
@@ -12,15 +11,14 @@ public class InvoiceClient : IInvoiceClient
     private readonly BaseHttpClient _userHttpClient;
     private readonly string _controller = "invoices";
 
-    public InvoiceClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
+    public InvoiceClient()
     {
-        string billioUrl = clientOptions.Value.BillioUrl
-            ?? throw new ArgumentNullException($"URL is missing {nameof(clientOptions.Value.BillioUrl)}");
+        string billioUrl = "https://localhost:8091";
 
-        _userHttpClient = new(httpClientFactory, billioUrl);
+        _userHttpClient = new(billioUrl);
     }
 
-    public async Task<InvoiceListResponse> Get()
+    public async Task<Result<InvoiceListResponse>> Get()
     {
         return await _userHttpClient.GetAsync<InvoiceListResponse>($"{_controller}");
     }
@@ -34,23 +32,23 @@ public class InvoiceClient : IInvoiceClient
         return await _userHttpClient.GetAsync<InvoiceDataListResponse>("{_controller}", headers);
     }
     */
-    public async Task<InvoiceResponse?> Get(Guid id)
+    public async Task<Result<InvoiceResponse?>> Get(Guid id)
     {
-        return await _userHttpClient.GetAsync<InvoiceResponse>($"{_controller}/{id}");
+        return await _userHttpClient.GetAsync<InvoiceResponse?>($"{_controller}/{id}");
     }
 
-    public async Task<AddResponse> Add(InvoiceAddRequest invoice)
+    public async Task<Result<AddResponse>> Add(InvoiceAddRequest invoice)
     {
         return await _userHttpClient.PostAsync<InvoiceAddRequest, AddResponse>($"{_controller}", invoice);
     }
 
-    public async Task Update(InvoiceUpdateRequest invoice)
+    public async Task<Result<bool>> Update(InvoiceUpdateRequest invoice)
     {
-        await _userHttpClient.PutAsync($"{_controller}", invoice);
+        return await _userHttpClient.PutAsync($"{_controller}", invoice);
     }
 
-    public async Task Delete(Guid id)
+    public async Task<Result<bool>> Delete(Guid id)
     {
-        await _userHttpClient.DeleteAsync($"{_controller}/{id}");
+        return await _userHttpClient.DeleteAsync($"{_controller}/{id}");
     }
 }

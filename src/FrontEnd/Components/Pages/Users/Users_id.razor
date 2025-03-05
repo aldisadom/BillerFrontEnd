@@ -1,6 +1,7 @@
 ﻿@page "/users/{IdString}"
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Seller
 @using Contracts.Requests.User
@@ -18,7 +19,15 @@
 @rendermode InteractiveServer
 
 <PageTitle>User</PageTitle>
-@if (user == null)
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
+@if (_user == null)
 {
     <h1>User</h1>
     <p><em>Loading...</em></p>
@@ -26,22 +35,22 @@
 else
 {
     <div style="display: flex; align-items: center;">
-        <h1>@user!.Name</h1>        
+        <h1>@_user!.Name</h1>        
         <div style="margin-left: 20px;">
             <button @onclick="EditClick">Edit</button>
         </div>      
     </div>
     <b>Email:</b>
     <br />
-    @user.Email
+    @_user.Email
     <br />
     <b>Name:</b>
     <br />
-    @user.Name
+    @_user.Name
     <br />        
     <b>LastName:</b>
     <br />
-    @user.LastName    
+    @_user.LastName    
 }
 <br />
 <div style="display: flex; align-items: center;">
@@ -50,7 +59,7 @@ else
         <button @onclick="AddSellerClick">Add</button>
     </div>
 </div>
-@if (sellerList == null)
+@if (_sellerList == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -60,7 +69,7 @@ else
         <div class="card-header">
         </div>
         <div class="card-body">
-            <QuickGrid Items="@sellerQueryable" Pagination="pagination">
+            <QuickGrid Items="@_sellerQueryable" Pagination="_pagination">
                 <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
                     <ColumnOptions>
                         <div class="search-box">
@@ -80,7 +89,7 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+        <div class="card-footer"><Paginator State="@_pagination" /></div>
     </div>    
 }
 
@@ -88,21 +97,38 @@ else
     [Parameter]
     public string IdString { get; set; } = string.Empty;
 
-    private Guid userId;
-    private UserResponse? user;
+    private Guid _userId;
+    private UserResponse? _user;
 
-    private SellerListResponse? sellerList;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    private IQueryable<SellerResponse> sellerQueryable = Enumerable.Empty<SellerResponse>().AsQueryable();
+    private SellerListResponse? _sellerList;
+    private PaginationState _pagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<SellerResponse> _sellerQueryable = Enumerable.Empty<SellerResponse>().AsQueryable();
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out userId))
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out _userId))
         {
             throw new NotFoundException("Invalid id format");
         }
 
-        user = await _userClient.Get(userId);
+        var response = await _userClient.Get(_userId);
+        bool sucess = response.Match(
+            user =>
+            {
+                _user = user;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess)
+            return;
+
         await GetSellers();
     }
 
@@ -113,7 +139,7 @@ else
 
     private async Task DeleteClick()
     {
-        await _userClient.Delete(userId);
+        await _userClient.Delete(_userId);
         _navigationManager.NavigateTo("/users", false);
     }
 
@@ -121,11 +147,27 @@ else
     {
         SellerGetRequest request = new()
             {
-                UserId = userId
+                UserId = _userId
             };
 
-        sellerList = await _sellerClient.Get(request);
-        sellerQueryable = sellerList.Sellers.AsQueryable();
+        var response = await _sellerClient.Get(request);
+        bool sucess = response.Match(
+            sellers =>
+            {
+                _sellerList = sellers;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
+
+        if (!sucess || _sellerList is null)
+            return;
+
+        _sellerQueryable = _sellerList.Sellers.AsQueryable();
     }
 
     void SearchByName(ChangeEventArgs e)

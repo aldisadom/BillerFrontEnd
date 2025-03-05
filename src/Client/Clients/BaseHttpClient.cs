@@ -1,19 +1,18 @@
-﻿using Contracts.Responses;
-using Domain.Exceptions;
+﻿using Common;
+using Contracts.Responses;
 using Newtonsoft.Json;
+using Serilog;
 using System.Text;
 
 namespace Clients.Clients;
 
 public class BaseHttpClient
 {
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _urlBase;
 
-    public BaseHttpClient(IHttpClientFactory httpClientFactory, string urlBase)
+    public BaseHttpClient(string urlBase)
     {
         _urlBase = urlBase;
-        _httpClientFactory = httpClientFactory;
     }
 
     public Uri GenerateUrl(string endpoint, Dictionary<string, string>? queryParameters = null)
@@ -39,38 +38,49 @@ public class BaseHttpClient
             }
         }
     }
-    private void DecodeResponseError(string body, HttpResponseMessage response)
+    private ErrorModel DecodeResponseError(string body, HttpResponseMessage response)
     {
-        string errorMessage = $"Failed to get data from client {_urlBase}, error code: {response.StatusCode}";
+        ErrorModel error = new()
+        {
+            StatusCode = response.StatusCode
+        };
 
         try
         {
-            ErrorResponse? error = JsonConvert.DeserializeObject<ErrorResponse>(body);
+            ErrorResponse? errorResponse = JsonConvert.DeserializeObject<ErrorResponse>(body);
 
-            if (error is null)
-                errorMessage += $", with body: {body}";
+            if (errorResponse is null)
+                error.Message = body;
             else
-                errorMessage += $", with message: {error.ErrorMessage}";
-
+            {
+                error.Message = errorResponse.Message;
+                error.ExtendedMessage = errorResponse.ExtendedMessage;
+            }
         }
         catch (Exception)
         {
-            errorMessage += $", with body: {body}";
+            error.Message = body;
         }
 
-        throw new ClientAPIException(errorMessage);
+        Log.Error("{Message}", JsonConvert.SerializeObject(error.ToString()));
+        return error;
     }
 
-    private T DecodeResponse<T>(string body)
+    private Result<T> DecodeResponse<T>(string body, HttpResponseMessage response)
     {
-        return JsonConvert.DeserializeObject<T>(body)
-            ?? throw new ClientAPIException($"Failed to deserialize data from client {_urlBase}, with body: {body}");
-    }
-    public async Task<T> GetAsync<T>(string endpoint, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
-    {
-        HttpClient client = _httpClientFactory.CreateClient();
+        var deserialised = JsonConvert.DeserializeObject<T>(body);
 
-        //configure
+        if (deserialised is null)
+            return new ErrorModel("Failed to deserialise", $"With body:{body}", response.StatusCode);
+
+        return deserialised;
+    }
+
+    public async Task<Result<T>> GetAsync<T>(string endpoint, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
+    {
+        HttpClient client = new();
+
+        //configure 
         Uri url = GenerateUrl(endpoint, queryParameters);
         HttpRequestMessage request = new(HttpMethod.Get, url);
         AddHeaders(request, headerParameters);
@@ -82,14 +92,14 @@ public class BaseHttpClient
         string responseBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
-            DecodeResponseError(responseBody, response);
+            return DecodeResponseError(responseBody, response);
 
-        return DecodeResponse<T>(responseBody);
+        return DecodeResponse<T>(responseBody, response);
     }
 
-    public async Task<T2> PostAsync<T1, T2>(string endpoint, T1 data, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
+    public async Task<Result<T2>> PostAsync<T1, T2>(string endpoint, T1 data, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
     {
-        HttpClient client = _httpClientFactory.CreateClient();
+        HttpClient client = new();
 
         //configure
         Uri url = GenerateUrl(endpoint, queryParameters);
@@ -106,14 +116,14 @@ public class BaseHttpClient
         string responseBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
-            DecodeResponseError(responseBody, response);
+            return DecodeResponseError(responseBody, response);
 
-        return DecodeResponse<T2>(responseBody);
+        return DecodeResponse<T2>(responseBody, response);
     }
 
-    public async Task PutAsync<T>(string endpoint, T data, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
+    public async Task<Result<bool>> PutAsync<T>(string endpoint, T data, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
     {
-        HttpClient client = _httpClientFactory.CreateClient();
+        HttpClient client = new();
 
         //configure
         Uri url = GenerateUrl(endpoint, queryParameters);
@@ -130,12 +140,14 @@ public class BaseHttpClient
         string responseBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
-            DecodeResponseError(responseBody, response);
+            return DecodeResponseError(responseBody, response);
+
+        return true;
     }
 
-    public async Task DeleteAsync(string endpoint, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
+    public async Task<Result<bool>> DeleteAsync(string endpoint, Dictionary<string, string>? queryParameters = null, Dictionary<string, string>? headerParameters = null)
     {
-        HttpClient client = _httpClientFactory.CreateClient();
+        HttpClient client = new();
 
         //configure
         Uri url = GenerateUrl(endpoint, queryParameters);
@@ -149,6 +161,8 @@ public class BaseHttpClient
         string responseBody = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
-            DecodeResponseError(responseBody, response);
+            return DecodeResponseError(responseBody, response);
+
+        return true;
     }
 }

@@ -2,6 +2,7 @@
 @using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Seller
 @using Contracts.Requests.Item
@@ -19,6 +20,14 @@
 @rendermode InteractiveServer
 
 <PageTitle>Seller update</PageTitle>
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
 @if (sellerUpdate == null)
 {
     <h1>Seller</h1>
@@ -80,6 +89,7 @@ else
     private Guid sellerId;
     private SellerResponse? seller;
     private SellerUpdateRequest? sellerUpdate;
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {

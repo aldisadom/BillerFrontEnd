@@ -1,6 +1,7 @@
 ﻿@page "/sellers/add"
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Seller
 @using Contracts.Responses
 @using Contracts.Responses.Seller
@@ -20,6 +21,14 @@
     </div>      
 </div>
 
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
 <b>User Id:</b>
 <br />
 <input type="text" @bind="seller.UserId" />
@@ -62,6 +71,7 @@
 
 @code {
     private SellerAddRequest seller = new();
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,8 +79,20 @@
 
     private async Task AddClick()
     {
-        AddResponse response = await _sellerClient.Add(seller);
+        var response = await _sellerClient.Add(seller);
 
-        _navigationManager.NavigateTo($"/sellers/{response.Id}", false);
+        bool sucess = response.Match(
+            addResponse =>
+            {
+                _navigationManager.NavigateTo($"/sellers/{addResponse.Id}", false);
+                _error = null;
+                return true;
+            },
+            error =>
+            {
+                _error = error;
+                return false;
+            }
+        );
     }
 }

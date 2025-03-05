@@ -2,6 +2,7 @@
 @using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common
 @using Contracts.Requests.Item
 @using Contracts.Responses.Item
 @using Domain.Exceptions
@@ -14,6 +15,14 @@
 @rendermode InteractiveServer
 
 <PageTitle>Item update</PageTitle>
+@if (_error != null)
+{
+    <h1>Error</h1>
+    @_error.Message
+    <br />
+    @_error.ExtendedMessage
+    <br />
+}
 @if (itemUpdate == null)
 {
     <h1>Item</h1>
@@ -51,6 +60,7 @@ else
     private Guid itemId;
     private ItemResponse? item;
     private ItemUpdateRequest? itemUpdate;
+    private ErrorModel? _error;
 
     protected override async Task OnInitializedAsync()
     {

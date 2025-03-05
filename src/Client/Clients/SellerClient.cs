@@ -1,9 +1,8 @@
 ﻿using Clients.Interfaces;
+using Common;
 using Contracts.Requests.Seller;
 using Contracts.Responses;
 using Contracts.Responses.Seller;
-using Domain.IOptions;
-using Microsoft.Extensions.Options;
 
 namespace Clients.Clients;
 
@@ -12,20 +11,19 @@ public class SellerClient : ISellerClient
     private readonly BaseHttpClient _userHttpClient;
     private readonly string _controller = "sellers";
 
-    public SellerClient(IOptions<ClientsOptions> clientOptions, IHttpClientFactory httpClientFactory)
+    public SellerClient()
     {
-        string billioUrl = clientOptions.Value.BillioUrl
-            ?? throw new ArgumentNullException($"URL is missing {nameof(clientOptions.Value.BillioUrl)}");
+        string billioUrl = "https://localhost:8091";
 
-        _userHttpClient = new(httpClientFactory, billioUrl);
+        _userHttpClient = new(billioUrl);
     }
 
-    public async Task<SellerListResponse> Get()
+    public async Task<Result<SellerListResponse>> Get()
     {
         return await _userHttpClient.GetAsync<SellerListResponse>($"{_controller}");
     }
 
-    public async Task<SellerListResponse> Get(SellerGetRequest request)
+    public async Task<Result<SellerListResponse>> Get(SellerGetRequest request)
     {
         Dictionary<string, string> headers = new()
         {
@@ -34,23 +32,23 @@ public class SellerClient : ISellerClient
         return await _userHttpClient.GetAsync<SellerListResponse>($"{_controller}", headers);
     }
 
-    public async Task<SellerResponse?> Get(Guid id)
+    public async Task<Result<SellerResponse?>> Get(Guid id)
     {
-        return await _userHttpClient.GetAsync<SellerResponse>($"{_controller}/{id}");
+        return await _userHttpClient.GetAsync<SellerResponse?>($"{_controller}/{id}");
     }
 
-    public async Task<AddResponse> Add(SellerAddRequest seller)
+    public async Task<Result<AddResponse>> Add(SellerAddRequest seller)
     {
         return await _userHttpClient.PostAsync<SellerAddRequest, AddResponse>($"{_controller}", seller);
     }
 
-    public async Task Update(SellerUpdateRequest seller)
+    public async Task<Result<bool>> Update(SellerUpdateRequest seller)
     {
-        await _userHttpClient.PutAsync($"{_controller}", seller);
+        return await _userHttpClient.PutAsync($"{_controller}", seller);
     }
 
-    public async Task Delete(Guid id)
+    public async Task<Result<bool>> Delete(Guid id)
     {
-        await _userHttpClient.DeleteAsync($"{_controller}/{id}");
+        return await _userHttpClient.DeleteAsync($"{_controller}/{id}");
     }
 }
