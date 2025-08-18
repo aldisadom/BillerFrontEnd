@@ -108,7 +108,7 @@ else
 
     private void EditClick()
     {
-        _navigationManager.NavigateTo($"/users/update{IdString}", false);
+        _navigationManager.NavigateTo($"/users/update/{IdString}", false);
     }    
 
     private async Task DeleteClick()
@@ -146,6 +146,6 @@ else
 
     private void AddSellerClick()
     {
-        _navigationManager.NavigateTo($"/sellers/add", false);
+        _navigationManager.NavigateTo($"/sellers/add?userId={userId}", false);
     }
 }

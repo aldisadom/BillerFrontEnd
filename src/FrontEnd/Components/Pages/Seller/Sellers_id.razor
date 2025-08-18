@@ -133,7 +133,7 @@ else
 
     private void EditClick()
     {
-        _navigationManager.NavigateTo($"/sellers/update{IdString}", false);
+        _navigationManager.NavigateTo($"/sellers/update/{IdString}", false);
     }
 
     private async Task DeleteClick()
@@ -158,19 +158,19 @@ else
 
     }
 
-    void EditCustomer(CustomerResponse item)
+    void EditCustomer(CustomerResponse customer)
     {
-        _navigationManager.NavigateTo($"/items/{item.Id}", false);
+        _navigationManager.NavigateTo($"/customer/{customer.Id}", false);
     }
 
-    async Task DeleteCustomer(CustomerResponse item)
+    async Task DeleteCustomer(CustomerResponse customer)
     {
-        await _customerClient.Delete(item.Id);
+        await _customerClient.Delete(customer.Id);
         await GetCustomers();
     }
 
     private void AddCustomerClick()
     {
-        _navigationManager.NavigateTo($"/customers/add", false);
+        _navigationManager.NavigateTo($"/customers/add?sellerId={sellerId}", false);
     }
 }

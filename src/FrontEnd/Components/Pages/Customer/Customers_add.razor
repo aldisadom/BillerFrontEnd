@@ -59,8 +59,13 @@
 @code {
     private CustomerAddRequest customer = new();
 
+    [SupplyParameterFromQuery]
+    private Guid? sellerId { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
+        if (sellerId is not null)
+            customer.SellerId = sellerId.Value;
     }
 
     private async Task AddClick()
