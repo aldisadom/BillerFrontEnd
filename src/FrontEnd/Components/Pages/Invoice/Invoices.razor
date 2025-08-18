@@ -91,6 +91,7 @@ else
 
     private void AddClick()
     {
-        _navigationManager.NavigateTo($"/invoices/add", false);
+        Guid userId = Guid.Parse("2aa92cc3-3edf-4c42-bf11-a88fc97ecd52");
+        _navigationManager.NavigateTo($"/invoices/add?userId={userId}", false);
     }
 }

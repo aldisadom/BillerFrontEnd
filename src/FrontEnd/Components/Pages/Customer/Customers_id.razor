@@ -41,6 +41,10 @@ else
     <br />
     @customer.InvoiceName
     <br />
+    <b>Invoice number:</b>
+    <br />
+    @customer.InvoiceNumber
+    <br />
     <b>Email:</b>
     <br />
     @customer.Email
@@ -160,6 +164,6 @@ else
 
     private void AddItemClick()
     {
-        _navigationManager.NavigateTo($"/items/add", false);
+        _navigationManager.NavigateTo($"/items/add?customerId={customerId}", false);
     }
 }

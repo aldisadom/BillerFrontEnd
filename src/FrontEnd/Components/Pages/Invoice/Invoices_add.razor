@@ -142,6 +142,9 @@
     private AppFilter customerFilter { get; set; } = new(false);
     private List<AppFilter> itemFilters { get; set; } = new();
 
+    [SupplyParameterFromQuery]
+    private Guid? userId { get; set; }
+
     public async Task SellerChange()
     {
         sellerFilter.UpdateSelected();
@@ -204,8 +207,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        invoice.UserId = Guid.Parse("34840efd-0036-42af-b686-3560cb8a0e84");
-        invoice.CreatedDate = DateTime.Now;
+        if (userId is not null)
+            invoice.UserId = userId.Value;
+
+        invoice.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
         invoice.DueDate = invoice.CreatedDate.AddDays(7);
 
         user = await _userClient.Get(invoice.UserId);
