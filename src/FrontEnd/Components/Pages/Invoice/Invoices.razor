@@ -13,9 +13,6 @@
 <PageTitle>Invoices</PageTitle>
 <div style="display: flex; align-items: center;">
     <h1>Invoices</h1>
-    <div style="margin-left: 20px;">
-        <button @onclick="AddClick">Add</button>
-    </div>
 </div>
 
 @if (invoiceList == null)
@@ -87,11 +84,5 @@ else
     {
         await _invoiceClient.Delete(invoice.Id);
         await GetData();
-    }
-
-    private void AddClick()
-    {
-        Guid userId = Guid.Parse("2aa92cc3-3edf-4c42-bf11-a88fc97ecd52");
-        _navigationManager.NavigateTo($"/invoices/add?userId={userId}", false);
     }
 }

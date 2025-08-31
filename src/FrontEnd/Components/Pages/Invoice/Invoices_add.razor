@@ -144,6 +144,10 @@
 
     [SupplyParameterFromQuery]
     private Guid? userId { get; set; }
+    [SupplyParameterFromQuery]
+    private Guid? sellerId { get; set; }
+    [SupplyParameterFromQuery]
+    private Guid? customerId { get; set; }
 
     public async Task SellerChange()
     {
@@ -184,7 +188,7 @@
     public void ItemChange(int index)
     {              
         itemFilters[index].UpdateSelected();
-        
+
 
         if (!itemFilters[index].IsValid())
         {
@@ -202,13 +206,29 @@
         itemFilters.Add(new AppFilter());        
         foreach (var item in itemsList!.Items)
             itemFilters[itemFilters.Count-1].SelectionList.Add(item.Id, item.Name);
-            
+
     }
 
     protected override async Task OnInitializedAsync()
     {
         if (userId is not null)
             invoice.UserId = userId.Value;
+
+        if (sellerId is not null)
+        {
+            invoice.SellerId = sellerId.Value;
+            SellerResponse? seller = await _sellerClient.Get(invoice.SellerId);
+            invoice.UserId = seller!.UserId;
+        }
+
+        if (customerId is not null)
+        {
+            invoice.CustomerId = customerId.Value;
+            CustomerResponse? customer = await _customerClient.Get(invoice.CustomerId);
+            invoice.SellerId = customer!.SellerId;
+            SellerResponse? seller = await _sellerClient.Get(invoice.SellerId);
+            invoice.UserId = seller!.UserId;
+        }
 
         invoice.CreatedDate = DateOnly.FromDateTime(DateTime.Now);
         invoice.DueDate = invoice.CreatedDate.AddDays(7);
@@ -217,17 +237,31 @@
         SellerGetRequest sellerGetRequest = new() { UserId = invoice.UserId };
         sellersList = await _sellerClient.Get(sellerGetRequest);
 
+        if (sellersList.Sellers.Count == 0)
+            return;
+
         foreach (var seller in sellersList.Sellers)
-            sellerFilter.SelectionList.Add(seller.Id, seller.CompanyName);
+            sellerFilter.SelectionList.TryAdd(seller.Id, seller.CompanyName);
 
-        if (sellersList.Sellers.Count > 0)
-        {
+        if (invoice.SellerId == default)
             invoice.SellerId = sellersList.Sellers[0].Id;
-            sellerFilter.SelectedId = invoice.SellerId;
-            await SellerChange();
-        }
 
-        invoice.CustomerId = customerFilter.SelectedId;
+        sellerFilter.UpdateSelected(invoice.SellerId);
+
+        CustomerGetRequest customerGetRequest = new() { SellerId = invoice.SellerId};
+        customersList = await _customerClient.Get(customerGetRequest);
+
+        if (customersList.Customers.Count == 0)
+            return;
+
+        foreach (var customer in customersList.Customers)
+            customerFilter.SelectionList.TryAdd(customer.Id, customer.CompanyName);
+
+        if (invoice.CustomerId == default)
+            invoice.CustomerId = customersList.Customers[0].Id;
+
+        customerFilter.UpdateSelected(invoice.CustomerId);
+        await CustomerChange();
     }
 
     private async Task AddClick()

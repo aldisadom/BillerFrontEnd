@@ -24,6 +24,9 @@ else
         <div style="margin-left: 20px;">
             <button @onclick="EditClick">Edit</button>
         </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="AddInvoiceClick">Add invoice</button>
+        </div>
     </div>
     <b>Name:</b>
     <br />
@@ -65,5 +68,10 @@ else
     {
         await _itemClient.Delete(itemId);
         _navigationManager.NavigateTo("/items", false);
+    }
+
+    private void AddInvoiceClick()
+    {
+        _navigationManager.NavigateTo($"/invoices/add?customerId={item?.CustomerId}", false);
     }
 }
