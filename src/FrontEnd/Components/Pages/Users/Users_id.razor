@@ -29,7 +29,10 @@ else
         <h1>@user!.Name</h1>        
         <div style="margin-left: 20px;">
             <button @onclick="EditClick">Edit</button>
-        </div>      
+        </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="AddInvoiceClick">Add invoice</button>
+        </div>
     </div>
     <b>Email:</b>
     <br />
@@ -147,5 +150,10 @@ else
     private void AddSellerClick()
     {
         _navigationManager.NavigateTo($"/sellers/add?userId={userId}", false);
+    }
+
+    private void AddInvoiceClick()
+    {
+        _navigationManager.NavigateTo($"/invoices/add?userId={userId}", false);
     }
 }
