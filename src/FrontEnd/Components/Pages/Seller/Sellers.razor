@@ -12,10 +12,7 @@
 
 <PageTitle>Sellers</PageTitle>
 <div style="display: flex; align-items: center;">
-    <h1>Sellers</h1>    
-    <div style="margin-left: 20px;">
-        <button @onclick="AddClick">Add</button>
-    </div>
+    <h1>Sellers</h1>
 </div>
 
 @if (sellerList == null)
@@ -86,10 +83,5 @@ else
     {
         await _sellerClient.Delete(seller.Id);
         await GetData();
-    } 
-
-    private void AddClick()
-    {
-        _navigationManager.NavigateTo($"/sellers/add", false);
     }
 }

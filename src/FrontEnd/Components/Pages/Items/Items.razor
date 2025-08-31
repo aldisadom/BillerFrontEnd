@@ -13,9 +13,6 @@
 <PageTitle>Items</PageTitle>
 <div style="display: flex; align-items: center;">
     <h1>Items</h1>
-    <div style="margin-left: 20px;">
-        <button @onclick="AddClick">Add</button>
-    </div>
 </div>
 
 @if (itemList == null)
@@ -78,11 +75,6 @@ else
     {
         await _itemClient.Delete(item.Id);
         await GetData();
-    }
-
-    private void AddClick()
-    {
-        _navigationManager.NavigateTo($"/items/add", false);
     }
 }
 
