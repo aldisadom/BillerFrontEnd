@@ -53,4 +53,16 @@ public class InvoiceClient : IInvoiceClient
     {
         await _userHttpClient.DeleteAsync($"{_controller}/{id}");
     }
+
+    public async Task<FileDownloadResult> GeneratePDF(InvoiceGenerateRequest invoice)
+    {
+        return await _userHttpClient.PostFileDowload($"{_controller}/generate", invoice);
+    }
+
+    public class FileDownloadResult
+    {
+        public Stream Content { get; set; } = default!;
+        public string? FileName { get; set; }
+        public string? ContentType { get; set; }
+    }
 }
