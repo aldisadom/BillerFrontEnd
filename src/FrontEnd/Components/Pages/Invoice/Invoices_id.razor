@@ -38,6 +38,12 @@ else
         <div style="margin-left: 20px;">
             <button @onclick="EditClick">Edit</button>
         </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="GenerateInvoiceClick">Generate invoice</button>
+        </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="GenerateJobDoneActClick">Generate job done act</button>
+        </div>
     </div>    
     <b>Invoice number:</b>
     <br />
@@ -112,6 +118,46 @@ else
     private void EditClick()
     {
         _navigationManager.NavigateTo($"/invoices/update/{IdString}", false);
+    }
+
+    private async void GenerateJobDoneActClick()
+    {
+        InvoiceGenerateRequest request = new()
+        {
+            Id = invoiceId,
+            LanguageCode = Contracts.Enums.Language.LT,
+            DocumentType = Contracts.Enums.DocumentType.JobDoneAct
+        };
+
+        await GeneratePdfClick(request);
+    }
+
+    private async void GenerateInvoiceClick()
+    {
+        InvoiceGenerateRequest request = new()
+        {
+            Id = invoiceId,
+            LanguageCode = Contracts.Enums.Language.LT,
+            DocumentType = Contracts.Enums.DocumentType.Invoice
+        };
+        
+        await GeneratePdfClick(request);
+    }
+
+    private async Task GeneratePdfClick(InvoiceGenerateRequest invoiceGenerateRequest)
+    {
+        var fileResult = await _invoiceClient.GeneratePDF(invoiceGenerateRequest);
+
+        using (var fileStream = fileResult.Content)
+        {
+            var documentsDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var filePath = Path.Combine(documentsDir, fileResult.FileName ?? "invoice.pdf");
+
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                await fileStream.CopyToAsync(fs);
+            }
+        }
     }
     
     private async Task DeleteClick()
