@@ -1,4 +1,4 @@
-﻿using Contracts.Enums;
+﻿using Common.Enums;
 
 namespace Contracts.Requests.Invoice;
 

@@ -2,6 +2,7 @@
 @using AutoMapper
 @using Clients.Clients
 @using Clients.Interfaces
+@using Common.Enums
 @using Contracts.Requests.Customer
 @using Contracts.Requests.Invoice
 @using Contracts.Requests.Item
@@ -44,7 +45,25 @@ else
         <div style="margin-left: 20px;">
             <button @onclick="GenerateJobDoneActClick">Generate job done act</button>
         </div>
-    </div>    
+    </div>
+    <b>Status:</b>
+    <br />    
+    <div style="display: flex; align-items: center;">
+        @invoice.Status
+        <div style="margin-left: 20px;">
+        <button @onclick="EditStatusCreatedClick">Status created</button>
+        </div>
+        <div style="margin-left: 20px;">
+        <button @onclick="EditStatusSendClick">Status send</button>
+        </div>
+        <div style="margin-left: 20px;">
+        <button @onclick="EditStatusOverDueClick">Status over due</button>
+        </div>
+        <div style="margin-left: 20px;">
+        <button @onclick="EditStatusPayedClick">Status payed</button>
+        </div>
+    </div>
+    <br />
     <b>Invoice number:</b>
     <br />
     @invoice.InvoiceNumber
@@ -120,33 +139,37 @@ else
         _navigationManager.NavigateTo($"/invoices/update/{IdString}", false);
     }
 
-    private async void GenerateJobDoneActClick()
+    
+    private async void EditStatusCreatedClick() => await EditStatusClick(InvoiceStatus.Created);
+    private async void EditStatusSendClick() => await EditStatusClick(InvoiceStatus.Send);
+    private async void EditStatusOverDueClick() => await EditStatusClick(InvoiceStatus.OverDue);
+    private async void EditStatusPayedClick() => await EditStatusClick(InvoiceStatus.Payed);
+
+    private async Task EditStatusClick(InvoiceStatus status)
+    {
+        InvoiceUpdateStatusRequest request = new()
+        {
+            Id = invoiceId,
+            Status = status
+        };
+
+        await _invoiceClient.UpdateStatus(request);
+        invoice = await _invoiceClient.Get(invoiceId);
+    }
+
+    private async void GenerateJobDoneActClick() => await GeneratePdfClick(DocumentType.JobDoneAct);
+    private async void GenerateInvoiceClick() => await GeneratePdfClick(DocumentType.Invoice);
+
+    private async Task GeneratePdfClick(DocumentType documentType)
     {
         InvoiceGenerateRequest request = new()
         {
             Id = invoiceId,
-            LanguageCode = Contracts.Enums.Language.LT,
-            DocumentType = Contracts.Enums.DocumentType.JobDoneAct
+            LanguageCode = Language.LT,
+            DocumentType = documentType
         };
 
-        await GeneratePdfClick(request);
-    }
-
-    private async void GenerateInvoiceClick()
-    {
-        InvoiceGenerateRequest request = new()
-        {
-            Id = invoiceId,
-            LanguageCode = Contracts.Enums.Language.LT,
-            DocumentType = Contracts.Enums.DocumentType.Invoice
-        };
-        
-        await GeneratePdfClick(request);
-    }
-
-    private async Task GeneratePdfClick(InvoiceGenerateRequest invoiceGenerateRequest)
-    {
-        var fileResult = await _invoiceClient.GeneratePDF(invoiceGenerateRequest);
+        var fileResult = await _invoiceClient.GeneratePDF(request);
 
         using (var fileStream = fileResult.Content)
         {
