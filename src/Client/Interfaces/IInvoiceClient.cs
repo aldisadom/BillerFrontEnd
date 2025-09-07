@@ -12,6 +12,7 @@ namespace Clients.Interfaces
         Task<InvoiceListResponse> Get();
         Task<InvoiceResponse?> Get(Guid id);
         Task Update(InvoiceUpdateRequest invoice);
+        Task UpdateStatus(InvoiceUpdateStatusRequest invoice);
         Task<FileDownloadResult> GeneratePDF(InvoiceGenerateRequest invoice);
     }
 }

@@ -43,7 +43,8 @@ else
                 <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Align="Align.Right" />
                 <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" Sortable="true" />
                 <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" Sortable="true" />
-                <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />                
+                <PropertyColumn Title="Status" Property="@(p => p.Status)" Sortable="true" />
+                <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
                 <TemplateColumn Title="Action">
                     <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
                     <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>

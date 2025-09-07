@@ -1,4 +1,4 @@
-﻿namespace Contracts.Enums;
+﻿namespace Common.Enums;
 
 public enum Language
 {
