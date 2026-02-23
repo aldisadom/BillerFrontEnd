@@ -4,7 +4,7 @@
     <ProjectVersion>2.1</ProjectVersion>
     <DockerTargetOS>Linux</DockerTargetOS>
     <DockerPublishLocally>False</DockerPublishLocally>
-    <ProjectGuid>98d52abf-7962-48db-82fb-f61d37e3a3b0</ProjectGuid>
+    <ProjectGuid>98d7c746-df38-4d4b-97de-638d86cdb7f6</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
     <DockerServiceName>frontend</DockerServiceName>
