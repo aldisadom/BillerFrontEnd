@@ -182,7 +182,7 @@
         itemFilters.Add(new AppFilter());
 
         foreach (var item in itemsList.Items)
-            itemFilters[0].SelectionList.Add(item.Id, item.Name);
+            itemFilters[0].SelectionList.Add(item.Id, $"{item.Name} ({item.Price})");
     }
 
     public void ItemChange(int index)
