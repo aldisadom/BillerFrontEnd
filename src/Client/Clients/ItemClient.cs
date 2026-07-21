@@ -1,7 +1,7 @@
 ﻿using Clients.Interfaces;
-using Contracts.Requests.Item;
-using Contracts.Responses;
-using Contracts.Responses.Item;
+using BillerContracts.Requests.Item;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Item;
 using Domain.IOptions;
 using Microsoft.Extensions.Options;
 

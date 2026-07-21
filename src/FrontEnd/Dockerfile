@@ -11,7 +11,6 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/FrontEnd/FrontEnd.csproj", "src/FrontEnd/"]
 COPY ["src/Client/Clients.csproj", "src/Client/"]
-COPY ["src/Contracts/Contracts.csproj", "src/Contracts/"]
 COPY ["src/Domain/Domain.csproj", "src/Domain/"]
 RUN dotnet restore "./src/FrontEnd/./FrontEnd.csproj"
 COPY . .

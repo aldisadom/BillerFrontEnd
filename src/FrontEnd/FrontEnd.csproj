@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\Clients.csproj" />
-    <ProjectReference Include="..\Contracts\Contracts.csproj" />
   </ItemGroup>
 
 </Project>

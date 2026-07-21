@@ -1,16 +1,14 @@
 ﻿@page "/invoices/add"
-@using Clients.Clients
+@using BillerContracts.Requests.Customer
+@using BillerContracts.Requests.Invoice
+@using BillerContracts.Requests.Item
+@using BillerContracts.Requests.Seller
+@using BillerContracts.Responses
+@using BillerContracts.Responses.Customer
+@using BillerContracts.Responses.Item
+@using BillerContracts.Responses.Seller
+@using BillerContracts.Responses.User
 @using Clients.Interfaces
-@using Contracts.Requests.Customer
-@using Contracts.Requests.Invoice
-@using Contracts.Requests.Item
-@using Contracts.Requests.Seller
-@using Contracts.Responses
-@using Contracts.Responses.Customer
-@using Contracts.Responses.Item
-@using Contracts.Responses.Seller
-@using Contracts.Responses.User
-@using Domain.Exceptions
 @using Microsoft.Fast.Components.FluentUI
 @using Domain.Models
 
@@ -38,17 +36,17 @@
 <br />
 <div class="row">
     <div class="col-md-3">
-        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+        <div style="display: flex-direction: row; justify-content: center; align-items: center">
             <b>Create date:</b>
             <br />
             <input type="date" @bind="invoice.CreatedDate" />
         </div>
-        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+        <div style="display: flex-direction: row; justify-content: center; align-items: center">
             <b>Due date:</b>
             <br />
             <input type="date" @bind="invoice.DueDate" />
         </div>
-        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+        <div style="display: flex-direction: row; justify-content: center; align-items: center">
             <b>Select seller:</b>
             <select class="form-select" @bind="@sellerFilter.SelectedId">
                 @foreach (var filter in sellerFilter.SelectionList)
@@ -61,7 +59,7 @@
                 Task.Run(async () => await SellerChange()).Wait();
             }
         </div>
-        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+        <div style="display: flex-direction: row; justify-content: center; align-items: center">
             <b>Select customer:</b>
             <select class="form-select" @bind="@customerFilter.SelectedId">
                 @foreach (var filter in customerFilter.SelectionList)
@@ -74,7 +72,7 @@
                 Task.Run(async () => await CustomerChange()).Wait();
             }
         </div>
-        <div style="display; flex-direction: row; justify-content: center; align-items: center">
+        <div style="display: flex-direction: row; justify-content: center; align-items: center">
             <b>Comment:</b>
             <br />
             <input type="text" @bind="invoice.Comments" />

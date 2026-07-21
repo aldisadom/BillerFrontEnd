@@ -1,18 +1,10 @@
 ﻿@page "/invoices/{IdString}"
 @using AutoMapper
-@using Clients.Clients
+@using BillerContracts.Enums
+@using BillerContracts.Requests.Invoice
+@using BillerContracts.Responses.Invoice
 @using Clients.Interfaces
-@using Common.Enums
-@using Contracts.Requests.Customer
-@using Contracts.Requests.Invoice
-@using Contracts.Requests.Item
-@using Contracts.Requests.Seller
-@using Contracts.Responses.Customer
-@using Contracts.Responses.Invoice
-@using Contracts.Responses.Item
-@using Contracts.Responses.Seller
 @using Domain.Exceptions
-@using Domain.Models
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
