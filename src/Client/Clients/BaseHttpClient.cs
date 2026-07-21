@@ -170,7 +170,7 @@ public class BaseHttpClient
 
         if (response.Content.Headers.ContentDisposition != null)
             result.FileName = response.Content.Headers.ContentDisposition.FileName?.Trim('"');
-        
+
         else if (response.Content.Headers.TryGetValues("Content-Disposition", out var values))
         {
             var disposition = values.FirstOrDefault();
@@ -178,7 +178,7 @@ public class BaseHttpClient
             {
                 var fileNamePart = "filename=";
                 var idx = disposition.IndexOf(fileNamePart, StringComparison.OrdinalIgnoreCase);
-                if (idx >= 0)                
+                if (idx >= 0)
                     result.FileName = disposition.Substring(idx + fileNamePart.Length).Trim('"');
             }
         }
