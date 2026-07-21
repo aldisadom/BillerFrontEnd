@@ -1,7 +1,7 @@
 ﻿using Clients.Interfaces;
-using Contracts.Requests.Invoice;
-using Contracts.Responses;
-using Contracts.Responses.Invoice;
+using BillerContracts.Requests.Invoice;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Invoice;
 using Domain.IOptions;
 using Microsoft.Extensions.Options;
 

@@ -1,6 +1,6 @@
-﻿using Contracts.Requests.Customer;
-using Contracts.Responses;
-using Contracts.Responses.Customer;
+﻿using BillerContracts.Requests.Customer;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Customer;
 
 namespace Clients.Interfaces;
 

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Contracts.Requests.Item;
-using Contracts.Responses.Item;
+using BillerContracts.Requests.Item;
+using BillerContracts.Responses.Item;
 
 namespace FrontEnd.MappingProfiles;
 

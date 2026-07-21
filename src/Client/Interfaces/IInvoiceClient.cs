@@ -1,6 +1,6 @@
-﻿using Contracts.Requests.Invoice;
-using Contracts.Responses;
-using Contracts.Responses.Invoice;
+﻿using BillerContracts.Requests.Invoice;
+using BillerContracts.Responses;
+using BillerContracts.Responses.Invoice;
 using static Clients.Clients.InvoiceClient;
 
 namespace Clients.Interfaces
