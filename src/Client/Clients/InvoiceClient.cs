@@ -20,11 +20,6 @@ public class InvoiceClient : IInvoiceClient
         _userHttpClient = new(httpClientFactory, billioUrl);
     }
 
-    public async Task<InvoiceListResponse> Get()
-    {
-        return await _userHttpClient.GetAsync<InvoiceListResponse>($"{_controller}");
-    }
-
     public async Task<InvoiceListResponse> Get(InvoiceGetRequest request)
     {
         Dictionary<string, string> queryParameters = _userHttpClient.GenerateQueryFromData(request);
