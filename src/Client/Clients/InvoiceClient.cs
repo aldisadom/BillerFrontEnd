@@ -24,16 +24,13 @@ public class InvoiceClient : IInvoiceClient
     {
         return await _userHttpClient.GetAsync<InvoiceListResponse>($"{_controller}");
     }
-    /*
-    public async Task<InvoiceDataListResponse> Get(InvoiceDataGetRequest request)
+
+    public async Task<InvoiceListResponse> Get(InvoiceGetRequest request)
     {
-        Dictionary<string, string> headers = new()
-        {
-            { "SellerId", request.SellerId.ToString()! }
-        };
-        return await _userHttpClient.GetAsync<InvoiceDataListResponse>("{_controller}", headers);
+        Dictionary<string, string> queryParameters = _userHttpClient.GenerateQueryFromData(request);
+        return await _userHttpClient.GetAsync<InvoiceListResponse>($"{_controller}", queryParameters);
     }
-    */
+
     public async Task<InvoiceResponse?> Get(Guid id)
     {
         return await _userHttpClient.GetAsync<InvoiceResponse>($"{_controller}/{id}");

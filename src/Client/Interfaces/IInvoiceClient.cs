@@ -10,6 +10,7 @@ namespace Clients.Interfaces
         Task<AddResponse> Add(InvoiceAddRequest invoice);
         Task Delete(Guid id);
         Task<InvoiceListResponse> Get();
+        Task<InvoiceListResponse> Get(InvoiceGetRequest request);
         Task<InvoiceResponse?> Get(Guid id);
         Task Update(InvoiceUpdateRequest invoice);
         Task UpdateStatus(InvoiceUpdateStatusRequest invoice);
