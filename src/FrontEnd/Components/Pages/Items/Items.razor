@@ -1,5 +1,6 @@
-﻿@page "/items"
-@using Clients.Clients
+@page "/items"
+@using BillerContracts.Enums
+@using BillerContracts.Requests.Item
 @using Clients.Interfaces
 @using BillerContracts.Responses.Item
 @using Microsoft.AspNetCore.Components.QuickGrid
@@ -15,55 +16,68 @@
     <h1>Items</h1>
 </div>
 
-@if (itemList == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="card">
-        <div class="card-header">
-        </div>
-        <div class="card-body">
-            <QuickGrid Items="@ItemsQueryable" Pagination="pagination">
-                <PropertyColumn Title="Name" Property="@(i => i.Name)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Item name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
-                <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
-                <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
-                <TemplateColumn Title="Action">
-                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
-                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
-                </TemplateColumn>
-            </QuickGrid>
-        </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+<div class="card">
+    <div class="card-header">
+        <b>Page size:</b>
+        <select class="form-select" @bind="selectedPageSize" @bind:after="OnPageSizeChanged">
+            <option value="@PageSize.p10">10</option>
+            <option value="@PageSize.p25">25</option>
+            <option value="@PageSize.p50">50</option>
+        </select>
     </div>
-}
+    <div class="card-body">
+        <QuickGrid TGridItem="ItemResponse" @ref="grid" ItemsProvider="LoadItems" Pagination="pagination">
+            <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
+            <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
+            <TemplateColumn Title="Action">
+                <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <div class="card-footer"><Paginator State="@pagination" /></div>
+</div>
 
 @code {
-    private ItemListResponse? itemList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    IQueryable<ItemResponse> ItemsQueryable = Enumerable.Empty<ItemResponse>().AsQueryable();
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
 
-    async Task GetData()
+    PageSize selectedPageSize = PageSize.p10;
+    PaginationState pagination = new (){ ItemsPerPage = (int)PageSize.p10 };
+    QuickGrid<ItemResponse> grid = default!;
+
+    protected override async Task OnParametersSetAsync()
     {
-        itemList = await _itemClient.Get();
-        ItemsQueryable = itemList.Items.AsQueryable();
+        Page = Math.Max(1, Page);
+        await pagination.SetCurrentPageIndexAsync(Page - 1);
     }
 
-    protected override async Task OnInitializedAsync()
+    async ValueTask<GridItemsProviderResult<ItemResponse>> LoadItems(GridItemsProviderRequest<ItemResponse> request)
     {
-        await GetData();
+        int itemsPerPage = request.Count ?? pagination.ItemsPerPage;
+        int page = (request.StartIndex / itemsPerPage) + 1;
+
+        if (page != Page)
+        {
+            Page = page;
+            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", Page), replace: true);
+        }
+
+        ItemListResponse itemList = await _itemClient.Get(new ItemGetRequest()
+        {
+            PageSize = selectedPageSize,
+            Page = Page
+        });
+
+        return GridItemsProviderResult.From(itemList.Items, itemList.TotalCount);
     }
 
-    void SearchByName(ChangeEventArgs e)
+    async Task OnPageSizeChanged()
     {
-
+        pagination.ItemsPerPage = (int)selectedPageSize;
+        await pagination.SetCurrentPageIndexAsync(0);
+        await grid.RefreshDataAsync();
     }
 
     void Edit(ItemResponse item)
@@ -74,7 +88,6 @@ else
     async Task Delete(ItemResponse item)
     {
         await _itemClient.Delete(item.Id);
-        await GetData();
+        await grid.RefreshDataAsync();
     }
 }
-

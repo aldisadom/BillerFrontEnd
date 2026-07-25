@@ -27,11 +27,8 @@ public class ItemClient : IItemClient
 
     public async Task<ItemListResponse> Get(ItemGetRequest request)
     {
-        Dictionary<string, string> headers = new()
-        {
-            { "CustomerId", request.CustomerId.ToString()! }
-        };
-        return await _userHttpClient.GetAsync<ItemListResponse>($"{_controller}", headers);
+        Dictionary<string, string> queryParameters = _userHttpClient.GenerateQueryFromData(request);
+        return await _userHttpClient.GetAsync<ItemListResponse>($"{_controller}", queryParameters);
     }
 
     public async Task<ItemResponse?> Get(Guid id)
