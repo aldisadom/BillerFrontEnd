@@ -1,5 +1,6 @@
-﻿@page "/invoices"
-@using Clients.Clients
+@page "/invoices"
+@using BillerContracts.Enums
+@using BillerContracts.Requests.Invoice
 @using Clients.Interfaces
 @using BillerContracts.Responses.Invoice
 @using Microsoft.AspNetCore.Components.QuickGrid
@@ -15,65 +16,68 @@
     <h1>Invoices</h1>
 </div>
 
-@if (invoiceList == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="card">
-        <div class="card-header">
-        </div>
-        <div class="card-body">
-            <QuickGrid Items="@InvoicesQueryable" Pagination="pagination">
-                <PropertyColumn Title="Seller" Property="@(i => i.Seller!.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Seller name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
-                <PropertyColumn Title="Customer" Property="@(i => i.Customer!.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Customer name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
-                <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Align="Align.Right" />
-                <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" Sortable="true" />
-                <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" Sortable="true" />
-                <PropertyColumn Title="Status" Property="@(p => p.Status)" Sortable="true" />
-                <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
-                <TemplateColumn Title="Action">
-                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
-                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
-                </TemplateColumn>
-            </QuickGrid>
-        </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+<div class="card">
+    <div class="card-header">
+        <b>Page size:</b>
+        <select class="form-select" @bind="selectedPageSize" @bind:after="OnPageSizeChanged">
+            <option value="@PageSize.p10">10</option>
+            <option value="@PageSize.p25">25</option>
+            <option value="@PageSize.p50">50</option>
+        </select>
     </div>
-}
+    <div class="card-body">
+        <QuickGrid TGridItem="InvoiceResponse" @ref="grid" ItemsProvider="LoadInvoices" Pagination="pagination">
+            <PropertyColumn Title="Seller" Property="@(i => i.Seller!.CompanyName)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Customer" Property="@(i => i.Customer!.CompanyName)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Align="Align.Right" />
+            <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
+            <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" />
+            <PropertyColumn Title="Status" Property="@(p => p.Status)" />
+            <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
+            <TemplateColumn Title="Action">
+                <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <div class="card-footer"><Paginator State="@pagination" /></div>
+</div>
 
 @code {
-    private InvoiceListResponse? invoiceList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    IQueryable<InvoiceResponse> InvoicesQueryable = Enumerable.Empty<InvoiceResponse>().AsQueryable();
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
 
-    async Task GetData()
+    PageSize selectedPageSize = PageSize.p10;
+    PaginationState pagination = new (){ ItemsPerPage = (int)PageSize.p10 };
+    QuickGrid<InvoiceResponse> grid = default!;
+
+    protected override async Task OnParametersSetAsync()
     {
-        invoiceList = await _invoiceClient.Get();
-        InvoicesQueryable = invoiceList.Invoices.AsQueryable();
+        Page = Math.Max(1, Page);
+        await pagination.SetCurrentPageIndexAsync(Page - 1);
     }
 
-    protected override async Task OnInitializedAsync()
+    async ValueTask<GridItemsProviderResult<InvoiceResponse>> LoadInvoices(GridItemsProviderRequest<InvoiceResponse> request)
     {
-        await GetData();
+        int page = (request.StartIndex / pagination.ItemsPerPage) + 1;
+
+        if (page != Page)
+            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", page), replace: true);
+        
+        InvoiceListResponse invoiceList = await _invoiceClient.Get(new InvoiceGetRequest()
+        {
+            PageSize = selectedPageSize,
+            Page = Page
+        });
+
+        return GridItemsProviderResult.From(invoiceList.Invoices, invoiceList.TotalCount);
     }
 
-    void SearchByName(ChangeEventArgs e)
+    async Task OnPageSizeChanged()
     {
-
+        pagination.ItemsPerPage = (int)selectedPageSize;
+        await pagination.SetCurrentPageIndexAsync(0);
+        await grid.RefreshDataAsync();
     }
 
     void Edit(InvoiceResponse invoice)
@@ -84,6 +88,6 @@ else
     async Task Delete(InvoiceResponse invoice)
     {
         await _invoiceClient.Delete(invoice.Id);
-        await GetData();
+        await grid.RefreshDataAsync();
     }
 }
