@@ -1,5 +1,4 @@
-using Clients;
-using Domain.IOptions;
+using BillerContracts.Clients;
 using FrontEnd.Capabilities;
 using FrontEnd.Components;
 
@@ -11,10 +10,9 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.Services.Configure<ClientsOptions>(builder.Configuration.GetSection("ClientsOptions"));
         bool detailedErrors = builder.Configuration.GetValue<bool>("DetailedErrors");
 
-        builder.Services.AddClients();
+        builder.Services.AddBillerClients(builder.Configuration.GetSection("ClientsOptions"));
 
         // Add services to the container.
         builder.Services
