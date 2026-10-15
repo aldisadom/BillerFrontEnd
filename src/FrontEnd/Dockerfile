@@ -10,7 +10,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/FrontEnd/FrontEnd.csproj", "src/FrontEnd/"]
-COPY ["src/Client/Clients.csproj", "src/Client/"]
 COPY ["src/Domain/Domain.csproj", "src/Domain/"]
 RUN dotnet restore "./src/FrontEnd/./FrontEnd.csproj"
 COPY . .
