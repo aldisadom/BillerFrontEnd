@@ -8,7 +8,7 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
   configured by `ClientsOptions` in `appsettings*.json` (`http://webapi:8070/...` inside compose).
 - **AutoMapper is not allowed** (in any Biller repo), nor any other mapping library. The existing
   profiles in `src/FrontEnd/MappingProfiles/` are to be replaced by hand-written `ToUpdateRequest()`
-  extension methods (plan: Biller `docs/plans/BIL-91-frontend-remove-automapper.md`). Don't add maps or
+  extension methods (plan: `docs/plans/BIL-91-remove-automapper.md`). Don't add maps or
   `IMapper` injections. Write an extension method that sets every property instead.
 - `src/Domain`: `AppFilter`, `ErrorModel` and `NotFoundException`.
 
@@ -21,6 +21,8 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 - Call the API only through the clients; don't build URLs in pages.
 - Biller owns validation and stored totals. A total shown on a page must match the API's `TotalPrice`.
 - There are no tests yet (BIL-87), so check changed pages in the browser.
+- Plans for work only in this repo go in `docs/plans/BIL-<n>-<slug>.md` here. Plans that change
+  several repos live in Biller's `docs/plans/`.
 - Before reading, comparing or using another Biller repo, put it on the branch with this branch's
   name, else on up-to-date master:
   `bash ../Biller/.claude/skills/_sync-repos/scripts/sync-repos.sh --branch "$(git branch --show-current)" Biller BillerContracts BillioIntegrationTest`
