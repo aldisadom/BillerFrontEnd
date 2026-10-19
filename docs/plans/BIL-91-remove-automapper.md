@@ -61,7 +61,7 @@ Every update-request property has a response property with the same name, so eac
 
 ## Order and other plans
 
-- **BIL-87 (front-end tests, [BIL-87-testing.md](BIL-87-testing.md)):** step 5 needs its test project. Do BIL-87 step 1 (test project and CI
+- **BIL-87 (front-end tests, [BIL-87-testing.md](BIL-87-testing.md)):** step 5 needs its test project. Do BIL-87 steps 1 and 4 (test project and CI
   step) and this plan in one PR, so the new mapping is never untested. The mapping tests replace
   BIL-87's AutoMapper profile tests.
 - **BIL-65 (series):** removes `InvoiceNumber` from `InvoiceUpdateRequest`, and `CustomerUpdateRequest`

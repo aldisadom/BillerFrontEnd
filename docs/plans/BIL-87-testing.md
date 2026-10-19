@@ -6,16 +6,17 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 - The front end has automated tests that run in CI on every PR.
 - Page logic (loading, mapping, button actions, navigation, errors) is tested without a running API.
-- The HTTP clients and the mapping extension methods are tested. AutoMapper is removed first (see [BIL-91-remove-automapper.md](BIL-91-remove-automapper.md)); it is not allowed in any Biller repo.
+- The mapping extension methods are tested. The HTTP clients come from the `BillerContracts.Clients` package and are tested there (`Clients.Tests`), so this repo doesn't test them again.
+- AutoMapper is removed first (see [BIL-91-remove-automapper.md](BIL-91-remove-automapper.md)); it is not allowed in any Biller repo.
 - Later, a few end-to-end tests cover the main flows against the real stack.
 
-## Current state (BillerFrontEnd master @ e9a6e89)
+## Current state (BillerFrontEnd master @ 44f9223)
 
 | Where | What |
 |---|---|
 | `src/FrontEnd` | Blazor Server (.NET 8, `InteractiveServer`), FluentUI 3.7.8, QuickGrid, AutoMapper 13 (to be removed) |
-| Pages | 25 `.razor` pages under `Components/Pages/{Customer,Invoice,Items,Seller,Users}`. Largest: `Invoices_update` (288 lines), `Invoices_add` (272) |
-| `src/Client` | `BaseHttpClient` (229 lines) plus one client per entity behind `I*Client` interfaces. Pages inject the interfaces, so they're easy to mock |
+| Pages | 24 `.razor` pages under `Components/Pages/{Customer,Invoice,Items,Seller,Users}`. Largest: `Invoices_update` (288 lines), `Invoices_add` (272) |
+| API clients | `BillerContracts.Clients` 1.1.1 NuGet package, tested in BillerContracts (`Clients.Tests`). Pages inject its `I*Client` interfaces, so they're easy to mock |
 | `MappingProfiles` | One AutoMapper profile per entity, to be replaced by hand-written extension methods |
 | Tests | None |
 | CI (`.github/workflows/build.yml`) | Restore and build only |
@@ -25,13 +26,12 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 1. **bUnit for component tests.** It renders Razor components in memory, lets tests click buttons and read the markup, and has a fake `NavigationManager`. No browser needed.
 2. **Same test conventions as Biller** (see Biller's `_write-tests` skill): xUnit, strict Moq mocks with `Verify`, hand-built test data, theories with a `Label`. Check that the bUnit version supports xUnit v3; fall back to xUnit v2 in this repo if not.
-3. **Clients are tested with a fake `HttpMessageHandler`**, checking the URL, method, body, and how error responses become exceptions.
-4. **End-to-end tests come later and use Playwright for .NET**, against `docker compose` (Biller + front end). They go in a separate project so the fast tests stay fast.
-5. **Test the behaviour, not the markup.** Assert on what is shown (names, prices, totals) and what was called, not on exact HTML.
+3. **End-to-end tests come later and use Playwright for .NET**, against `docker compose` (Biller + front end). They go in a separate project so the fast tests stay fast.
+4. **Test the behaviour, not the markup.** Assert on what is shown (names, prices, totals) and what was called, not on exact HTML.
 
 ## Step 1: Test project
 
-- `tests/FrontEnd.Tests/FrontEnd.Tests.csproj`: xUnit, `bunit`, `Moq`, `coverlet.collector`. References `FrontEnd` and `Clients`.
+- `tests/FrontEnd.Tests/FrontEnd.Tests.csproj`: xUnit, `bunit`, `Moq`, `coverlet.collector`. References `FrontEnd`.
 - Add it to `BillerFrontEnd.sln`.
 - A small base class that registers mocks for every `I*Client` and the FluentUI services, so each test only sets up what it uses.
 
@@ -40,12 +40,7 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 - Done together with BIL-91 ([BIL-91-remove-automapper.md](BIL-91-remove-automapper.md)): one test per `ToUpdateRequest()` method, checking every property, like Biller's `MappingTestHelper`.
 - No AutoMapper configuration tests: AutoMapper is not allowed.
 
-## Step 3: Clients
-
-- `BaseHttpClient`: success, 400 with a validation body, 404, 500, and how each becomes an exception or result.
-- One test file per client: each method hits the right URL and method with the right body.
-
-## Step 4: Pages (bUnit), in priority order
+## Step 3: Pages (bUnit), in priority order
 
 | Page | Cases |
 |---|---|
@@ -58,7 +53,7 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 Writing these may show logic worth moving out of the `.razor` files into small classes (e.g. invoice line totals). Do that only where a test needs it.
 
-## Step 5: CI
+## Step 4: CI
 
 Add to `build.yml` after Build:
 ```yaml
@@ -66,11 +61,11 @@ Add to `build.yml` after Build:
         run: dotnet test BillerFrontEnd.sln --no-build --configuration Release --collect:"XPlat Code Coverage"
 ```
 
-## Step 6: Claude skills for this repo
+## Step 5: Claude skills for this repo
 
 - Copy and adapt Biller's `_write-tests` and `_test-coverage` skills into `.claude/skills/`, with a bUnit section (rendering, `Find`/`Click`, `FakeNavigationManager`, waiting for async rendering).
 
-## Step 7: End-to-end tests (later phase)
+## Step 6: End-to-end tests (later phase)
 
 - `tests/FrontEnd.E2E` with `Microsoft.Playwright`.
 - Flows: log in → create seller → customer → item → invoice → download PDF; edit item and see the change.
@@ -84,8 +79,7 @@ Add to `build.yml` after Build:
 ## Order of work
 
 1. Test project, AutoMapper removal with its mapping tests (BIL-91, [BIL-91-remove-automapper.md](BIL-91-remove-automapper.md)), CI step (one PR, so CI runs tests from the start).
-2. Client tests.
-3. `Invoices_add` and `Invoices_update`.
-4. The other pages.
-5. Skills.
-6. E2E.
+2. `Invoices_add` and `Invoices_update`.
+3. The other pages.
+4. Skills.
+5. E2E.
