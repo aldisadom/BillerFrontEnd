@@ -1,5 +1,4 @@
 ﻿@page "/invoices/{IdString}"
-@using AutoMapper
 @using BillerContracts.Enums
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Responses.Invoice
@@ -12,7 +11,6 @@
 @inject ICustomerClient _customerClient
 @inject ISellerClient _sellerClient
 @inject IItemClient _itemClient
-@inject IMapper _mapper
 
 @attribute [StreamRendering]
 @rendermode InteractiveServer
@@ -32,27 +30,24 @@ else
             <button @onclick="EditClick">Edit</button>
         </div>
         <div style="margin-left: 20px;">
-            <button @onclick="GenerateInvoiceClick">Generate invoice</button>
+            <button @onclick="() => GeneratePdfClick(DocumentType.Invoice)">Generate invoice</button>
         </div>
         <div style="margin-left: 20px;">
-            <button @onclick="GenerateJobDoneActClick">Generate job done act</button>
+            <button @onclick="() => GeneratePdfClick(DocumentType.JobDoneAct)">Generate job done act</button>
         </div>
     </div>
     <b>Status:</b>
     <br />    
     <div style="display: flex; align-items: center;">
-        @invoice.Status
+        <InvoiceStatusLabel Status="@invoice.Status" />
         <div style="margin-left: 20px;">
-        <button @onclick="EditStatusCreatedClick">Status created</button>
+        <button @onclick="() => EditStatusClick(InvoiceStatus.Created)">Status created</button>
         </div>
         <div style="margin-left: 20px;">
-        <button @onclick="EditStatusSendClick">Status send</button>
+        <button @onclick="() => EditStatusClick(InvoiceStatus.Send)">Status send</button>
         </div>
         <div style="margin-left: 20px;">
-        <button @onclick="EditStatusOverDueClick">Status over due</button>
-        </div>
-        <div style="margin-left: 20px;">
-        <button @onclick="EditStatusPayedClick">Status payed</button>
+        <button @onclick="() => EditStatusClick(InvoiceStatus.Payed)">Status payed</button>
         </div>
     </div>
     <br />
@@ -131,11 +126,6 @@ else
         _navigationManager.NavigateTo($"/invoices/update/{IdString}", false);
     }
 
-    
-    private async void EditStatusCreatedClick() => await EditStatusClick(InvoiceStatus.Created);
-    private async void EditStatusSendClick() => await EditStatusClick(InvoiceStatus.Send);
-    private async void EditStatusOverDueClick() => await EditStatusClick(InvoiceStatus.OverDue);
-    private async void EditStatusPayedClick() => await EditStatusClick(InvoiceStatus.Payed);
 
     private async Task EditStatusClick(InvoiceStatus status)
     {
@@ -148,9 +138,6 @@ else
         await _invoiceClient.UpdateStatus(request);
         invoice = await _invoiceClient.Get(invoiceId);
     }
-
-    private async void GenerateJobDoneActClick() => await GeneratePdfClick(DocumentType.JobDoneAct);
-    private async void GenerateInvoiceClick() => await GeneratePdfClick(DocumentType.Invoice);
 
     private async Task GeneratePdfClick(DocumentType documentType)
     {

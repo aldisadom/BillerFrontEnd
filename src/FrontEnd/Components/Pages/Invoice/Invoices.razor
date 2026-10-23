@@ -1,4 +1,4 @@
-@page "/invoices"
+﻿@page "/invoices"
 @using BillerContracts.Enums
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Clients.Interfaces
@@ -32,7 +32,9 @@
             <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Align="Align.Right" />
             <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
             <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" />
-            <PropertyColumn Title="Status" Property="@(p => p.Status)" />
+            <TemplateColumn Title="Status">
+                <InvoiceStatusLabel Status="@context.Status" />
+            </TemplateColumn>
             <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
             <TemplateColumn Title="Action">
                 <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>

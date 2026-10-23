@@ -1,0 +1,8 @@
+﻿@using BillerContracts.Enums
+
+<span style="@(Status == InvoiceStatus.OverDue ? "color: red; font-weight: bold;" : null)">@Status</span>
+
+@code {
+    [Parameter]
+    public InvoiceStatus Status { get; set; }
+}
