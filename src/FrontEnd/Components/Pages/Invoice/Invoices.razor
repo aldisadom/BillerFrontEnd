@@ -1,4 +1,4 @@
-@page "/invoices"
+﻿@page "/invoices"
 @using BillerContracts.Enums
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Clients.Interfaces
@@ -33,7 +33,7 @@
             <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
             <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" />
             <TemplateColumn Title="Status">
-                <span style="@(context.Status == InvoiceStatus.OverDue ? "color: red; font-weight: bold;" : "")">@context.Status</span>
+                <InvoiceStatusLabel Status="@context.Status" />
             </TemplateColumn>
             <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
             <TemplateColumn Title="Action">

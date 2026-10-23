@@ -1,5 +1,4 @@
 ﻿@page "/invoices/{IdString}"
-@using AutoMapper
 @using BillerContracts.Enums
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Responses.Invoice
@@ -12,7 +11,6 @@
 @inject ICustomerClient _customerClient
 @inject ISellerClient _sellerClient
 @inject IItemClient _itemClient
-@inject IMapper _mapper
 
 @attribute [StreamRendering]
 @rendermode InteractiveServer
@@ -41,7 +39,7 @@ else
     <b>Status:</b>
     <br />    
     <div style="display: flex; align-items: center;">
-        <span style="@(invoice.Status == InvoiceStatus.OverDue ? "color: red; font-weight: bold;" : "")">@invoice.Status</span>
+        <InvoiceStatusLabel Status="@invoice.Status" />
         <div style="margin-left: 20px;">
         <button @onclick="EditStatusCreatedClick">Status created</button>
         </div>
