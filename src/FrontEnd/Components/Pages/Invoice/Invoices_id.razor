@@ -1,5 +1,4 @@
 ﻿@page "/invoices/{IdString}"
-@using BillerContracts.Clients
 @using BillerContracts.Enums
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Responses.Invoice
@@ -37,10 +36,6 @@ else
             <button @onclick="() => GeneratePdfClick(DocumentType.JobDoneAct)">Generate job done act</button>
         </div>
     </div>
-    @if (errorMessage != null)
-    {
-        <p style="color: red;">@errorMessage</p>
-    }
     <b>Status:</b>
     <br />    
     <div style="display: flex; align-items: center;">
@@ -112,7 +107,6 @@ else
     private Guid invoiceId;
 
     private InvoiceResponse? invoice;
-    private string? errorMessage;
     private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<InvoiceItemResponse> itemsQueryable = Enumerable.Empty<InvoiceItemResponse>().AsQueryable();
 
@@ -141,16 +135,8 @@ else
             Status = status
         };
 
-        errorMessage = null;
-        try
-        {
-            await _invoiceClient.UpdateStatus(request);
-            invoice = await _invoiceClient.Get(invoiceId);
-        }
-        catch (ClientAPIException ex)
-        {
-            errorMessage = ex.Message;
-        }
+        await _invoiceClient.UpdateStatus(request);
+        invoice = await _invoiceClient.Get(invoiceId);
     }
 
     private async Task GeneratePdfClick(DocumentType documentType)
@@ -162,25 +148,17 @@ else
             DocumentType = documentType
         };
 
-        errorMessage = null;
-        try
-        {
-            var fileResult = await _invoiceClient.GeneratePDF(request);
+        var fileResult = await _invoiceClient.GeneratePDF(request);
 
-            using (var fileStream = fileResult.Content)
+        using (var fileStream = fileResult.Content)
+        {
+            var documentsDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            var filePath = Path.Combine(documentsDir, fileResult.FileName ?? "invoice.pdf");
+
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
-                var documentsDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                var filePath = Path.Combine(documentsDir, fileResult.FileName ?? "invoice.pdf");
-
-                using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
-                {
-                    await fileStream.CopyToAsync(fs);
-                }
+                await fileStream.CopyToAsync(fs);
             }
-        }
-        catch (ClientAPIException ex)
-        {
-            errorMessage = ex.Message;
         }
     }
     
