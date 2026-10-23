@@ -41,15 +41,12 @@ else
     <b>Status:</b>
     <br />    
     <div style="display: flex; align-items: center;">
-        @invoice.Status
+        <span style="@(invoice.Status == InvoiceStatus.OverDue ? "color: red; font-weight: bold;" : "")">@invoice.Status</span>
         <div style="margin-left: 20px;">
         <button @onclick="EditStatusCreatedClick">Status created</button>
         </div>
         <div style="margin-left: 20px;">
         <button @onclick="EditStatusSendClick">Status send</button>
-        </div>
-        <div style="margin-left: 20px;">
-        <button @onclick="EditStatusOverDueClick">Status over due</button>
         </div>
         <div style="margin-left: 20px;">
         <button @onclick="EditStatusPayedClick">Status payed</button>
@@ -134,7 +131,6 @@ else
     
     private async void EditStatusCreatedClick() => await EditStatusClick(InvoiceStatus.Created);
     private async void EditStatusSendClick() => await EditStatusClick(InvoiceStatus.Send);
-    private async void EditStatusOverDueClick() => await EditStatusClick(InvoiceStatus.OverDue);
     private async void EditStatusPayedClick() => await EditStatusClick(InvoiceStatus.Payed);
 
     private async Task EditStatusClick(InvoiceStatus status)
