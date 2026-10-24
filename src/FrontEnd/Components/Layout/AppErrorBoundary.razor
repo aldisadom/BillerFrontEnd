@@ -1,0 +1,49 @@
+@using FrontEnd.Capabilities
+@inherits ErrorBoundary
+@implements IDisposable
+
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jsRuntime
+@inject ILogger<AppErrorBoundary> _logger
+
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else
+{
+    <div class="alert alert-danger" role="alert">
+        <p>@ErrorMessages.For(CurrentException)</p>
+        <button class="btn btn-primary" @onclick="Recover">Try again</button>
+        <button class="btn btn-secondary" @onclick="BackClick">Back</button>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        _navigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    protected override Task OnErrorAsync(Exception exception)
+    {
+        _logger.LogError(exception, "Unhandled error on {Uri}", _navigationManager.Uri);
+        return Task.CompletedTask;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        // A new page starts without the old page's error
+        _ = InvokeAsync(Recover);
+    }
+
+    private async Task BackClick()
+    {
+        await _jsRuntime.InvokeVoidAsync("history.back");
+    }
+
+    public void Dispose()
+    {
+        _navigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
