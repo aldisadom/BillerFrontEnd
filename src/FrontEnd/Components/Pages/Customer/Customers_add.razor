@@ -1,10 +1,13 @@
 ﻿@page "/customers/add"
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Customer
+@using BillerContracts.Requests.Series
+@using BillerContracts.Responses.Series
 @using BillerContracts.Responses
 
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
+@inject ISeriesClient _seriesClient
 
 @attribute [StreamRendering]
 
@@ -18,7 +21,7 @@
 
 <b>SellerId:</b>
 <br />
-<input type="text" @bind="customer.SellerId" />
+<input type="text" @bind="customer.SellerId" @bind:after="LoadSeries" />
 <br />
 <b>Company name:</b>
 <br />
@@ -28,9 +31,16 @@
 <br />
 <input type="text" @bind="customer.CompanyNumber" />
 <br />
-<b>Invoice name:</b>
+<b>Series:</b>
 <br />
-<input type="text" @bind="customer.InvoiceName" />
+<select @bind="customer.SeriesId">
+    <option value="@Guid.Empty">Select series</option>
+    @foreach (var series in seriesList)
+    {
+        <option value="@series.Id">@series.Name</option>
+    }
+</select>
+<a href="/series/add?sellerId=@customer.SellerId">New series</a>
 <br />
 <b>Email:</b>
 <br />
@@ -54,6 +64,7 @@
 
 @code {
     private CustomerAddRequest customer = new();
+    private List<SeriesResponse> seriesList = [];
 
     [SupplyParameterFromQuery]
     private Guid? sellerId { get; set; }
@@ -61,7 +72,18 @@
     protected override async Task OnInitializedAsync()
     {
         if (sellerId is not null)
+        {
             customer.SellerId = sellerId.Value;
+            await LoadSeries();
+        }
+    }
+
+    private async Task LoadSeries()
+    {
+        customer.SeriesId = Guid.Empty;
+        seriesList = customer.SellerId == Guid.Empty
+            ? []
+            : (await _seriesClient.Get(new SeriesGetRequest { SellerId = customer.SellerId, PageSize = BillerContracts.Enums.PageSize.p50 })).Series;
     }
 
     private async Task AddClick()

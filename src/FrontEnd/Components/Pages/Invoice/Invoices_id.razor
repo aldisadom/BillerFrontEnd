@@ -50,9 +50,9 @@ else
         </div>
     </div>
     <br />
-    <b>Invoice number:</b>
+    <b>Invoice:</b>
     <br />
-    @invoice.InvoiceNumber
+    @invoice.SeriesName @invoice.InvoiceNumber.ToString("D6")
     <br />
     <b>Date created:</b>
     <br />

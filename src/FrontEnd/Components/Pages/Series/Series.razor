@@ -1,0 +1,82 @@
+﻿@page "/series"
+@using BillerContracts.Clients.Interfaces
+@using BillerContracts.Enums
+@using BillerContracts.Requests.Series
+@using BillerContracts.Responses.Series
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@inject ISeriesClient _seriesClient
+@inject NavigationManager _navigationManager
+
+@attribute [StreamRendering]
+
+<PageTitle>Series</PageTitle>
+<div style="display: flex; align-items: center;">
+    <h1>Series</h1>
+    @if (sellerId is not null)
+    {
+        <div style="margin-left: 20px;">
+            <button @onclick="AddClick">Add series</button>
+        </div>
+    }
+</div>
+
+@if (seriesList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@seriesQueryable" Pagination="pagination">
+                <PropertyColumn Title="Name" Property="@(s => s.Name)" Sortable="true" Align="Align.Left" />
+                <PropertyColumn Title="Next number" Property="@(s => s.NextNumber)" Align="Align.Right" />
+                <PropertyColumn Title="SellerId" Property="@(s => s.SellerId)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@pagination" /></div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery]
+    private Guid? sellerId { get; set; }
+
+    private SeriesListResponse? seriesList;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
+    IQueryable<SeriesResponse> seriesQueryable = Enumerable.Empty<SeriesResponse>().AsQueryable();
+
+    async Task GetData()
+    {
+        seriesList = await _seriesClient.Get(new SeriesGetRequest { SellerId = sellerId, PageSize = PageSize.p50 });
+        seriesQueryable = seriesList.Series.AsQueryable();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+    }
+
+    void AddClick()
+    {
+        _navigationManager.NavigateTo($"/series/add?sellerId={sellerId}", false);
+    }
+
+    void Edit(SeriesResponse series)
+    {
+        _navigationManager.NavigateTo($"/series/update/{series.Id}", false);
+    }
+
+    async Task Delete(SeriesResponse series)
+    {
+        await _seriesClient.Delete(series.Id);
+        await GetData();
+    }
+}

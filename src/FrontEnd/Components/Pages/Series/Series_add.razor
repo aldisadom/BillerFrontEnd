@@ -1,0 +1,49 @@
+﻿@page "/series/add"
+@using BillerContracts.Clients.Interfaces
+@using BillerContracts.Requests.Series
+@using BillerContracts.Responses
+
+@inject NavigationManager _navigationManager
+@inject ISeriesClient _seriesClient
+
+@attribute [StreamRendering]
+
+<PageTitle>Series add</PageTitle>
+
+<div style="display: flex; align-items: center;">
+    <div style="margin-left: 20px;">
+    <button @onclick="AddClick">Add</button>
+    </div>
+</div>
+
+<b>SellerId:</b>
+<br />
+<input type="text" @bind="series.SellerId" />
+<br />
+<b>Name:</b>
+<br />
+<input type="text" maxlength="10" @bind="series.Name" />
+<br />
+<b>Next number (empty starts at 1):</b>
+<br />
+<input type="number" @bind="series.NextNumber" />
+
+@code {
+    private SeriesAddRequest series = new();
+
+    [SupplyParameterFromQuery]
+    private Guid? sellerId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (sellerId is not null)
+            series.SellerId = sellerId.Value;
+    }
+
+    private async Task AddClick()
+    {
+        await _seriesClient.Add(series);
+
+        _navigationManager.NavigateTo($"/series?sellerId={series.SellerId}", false);
+    }
+}

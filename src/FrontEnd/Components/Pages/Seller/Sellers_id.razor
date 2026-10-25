@@ -31,6 +31,9 @@ else
         <div style="margin-left: 20px;">
             <button @onclick="AddInvoiceClick">Add invoice</button>
         </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="SeriesClick">Series</button>
+        </div>
     </div>
     <b>Company Name:</b>
     <br />
@@ -94,7 +97,7 @@ else
                     </ColumnOptions>
                 </PropertyColumn>
                 <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
-                <PropertyColumn Title="Invoice name" Property="@(i => i.InvoiceName)" Align="Align.Right" />
+                <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
                 <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
                 <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
                 <PropertyColumn Title="State" Property="@(i => i.State)" Align="Align.Right" />
@@ -168,6 +171,11 @@ else
     {
         await _customerClient.Delete(customer.Id);
         await GetCustomers();
+    }
+
+    private void SeriesClick()
+    {
+        _navigationManager.NavigateTo($"/series?sellerId={sellerId}", false);
     }
 
     private void AddCustomerClick()

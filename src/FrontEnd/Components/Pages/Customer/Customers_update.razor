@@ -3,6 +3,8 @@
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Item
+@using BillerContracts.Requests.Series
+@using BillerContracts.Responses.Series
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
@@ -11,6 +13,7 @@
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
 @inject IItemClient _itemClient
+@inject ISeriesClient _seriesClient
 @inject IMapper _mapper
 
 @attribute [StreamRendering]
@@ -40,13 +43,16 @@ else
     <br />
     <input type="text" @bind="customerUpdate.CompanyNumber" />
     <br />
-    <b>Invoice name:</b>
+    <b>Series:</b>
     <br />
-    <input type="text" @bind="customerUpdate.InvoiceName" />
-    <br />
-    <b>Invoice number:</b>
-    <br />
-    <input type="text" @bind="customerUpdate.InvoiceNumber" />
+    <select @bind="customerUpdate.SeriesId">
+        <option value="@Guid.Empty">Select series</option>
+        @foreach (var series in seriesList)
+        {
+            <option value="@series.Id">@series.Name</option>
+        }
+    </select>
+    <span>Changing the series affects only new invoices.</span>
     <br />
     <b>Email:</b>
     <br />
@@ -77,6 +83,7 @@ else
     private Guid customerId;
     private CustomerResponse? customer;
     private CustomerUpdateRequest? customerUpdate;
+    private List<SeriesResponse> seriesList = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,6 +94,7 @@ else
 
         customer = await _customerClient.Get(customerId);
         customerUpdate = _mapper.Map<CustomerUpdateRequest>(customer);
+        seriesList = (await _seriesClient.Get(new SeriesGetRequest { SellerId = customer.SellerId, PageSize = BillerContracts.Enums.PageSize.p50 })).Series;
     }
 
     private async Task UpdateClick()

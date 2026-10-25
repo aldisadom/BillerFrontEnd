@@ -39,9 +39,9 @@ else
             <button @onclick="DeleteClick">Delete</button>
         </div>
     </div>    
-    <b>Invoice number:</b>
+    <b>Invoice:</b>
     <br />
-    <input type="number" @bind="invoiceUpdate.InvoiceNumber" />
+    @invoice?.SeriesName @invoice?.InvoiceNumber.ToString("D6")
     <br />
     <b>Date created:</b>
     <br />
