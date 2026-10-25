@@ -24,9 +24,7 @@
 <br />
 <input type="text" maxlength="10" @bind="series.Name" />
 <br />
-<b>Next number (empty starts at 1):</b>
-<br />
-<input type="number" @bind="series.NextNumber" />
+<span>A new series starts at number 1.</span>
 
 @code {
     private SeriesAddRequest series = new();
