@@ -9,12 +9,22 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="FrontEnd.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet />
+    <HeadOutlet @rendermode="RenderModeForPage" />
 </head>
 
 <body>
-    <Routes />
+    <Routes @rendermode="RenderModeForPage" />
     <script src="_framework/blazor.web.js"></script>
 </body>
 
 </html>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    // The error page stays static: it needs HttpContext, and a failing request shouldn't open a circuit.
+    // Only a full request is static (UseExceptionHandler); link to /Error with forceLoad, never a plain NavigateTo.
+    private IComponentRenderMode? RenderModeForPage =>
+        HttpContext.Request.Path.StartsWithSegments("/Error") ? null : InteractiveServer;
+}
