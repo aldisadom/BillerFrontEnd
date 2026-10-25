@@ -21,7 +21,8 @@ else
 @code {
     protected override void OnParametersSet()
     {
-        // MainLayout passes a new @Body on navigation: show the new page, not the old page's error
+        // MainLayout passes a new @Body on navigation (it has no state of its own, so it re-renders only then):
+        // show the new page, not the old page's error
         Recover();
     }
 
