@@ -10,7 +10,9 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
   profiles in `src/FrontEnd/MappingProfiles/` are to be replaced by hand-written `ToUpdateRequest()`
   extension methods (plan: `docs/plans/BIL-91-remove-automapper.md`). Don't add maps or
   `IMapper` injections. Write an extension method that sets every property instead.
-- `src/Domain`: `AppFilter`, `ErrorModel` and `NotFoundException`.
+- `src/Domain`: `AppFilter` and `NotFoundException`. API errors arrive as `ClientAPIException` with an
+  `ErrorModel` from BillerContracts; `AppErrorBoundary` (`Components/Layout/`) shows them in place of the
+  page, with the text from `Capabilities/ErrorMessages.cs`.
 
 ## Where things go
 - Pages: `src/FrontEnd/Components/Pages/<Resource>/`, named `<Resource>s.razor` (list), `<Resource>s_add`,
