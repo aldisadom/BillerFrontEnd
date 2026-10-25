@@ -1,6 +1,5 @@
 @using FrontEnd.Capabilities
 @inherits ErrorBoundary
-@implements IDisposable
 
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jsRuntime
@@ -20,13 +19,10 @@ else
 }
 
 @code {
-    private IDisposable? _locationChangingRegistration;
-
-    protected override void OnAfterRender(bool firstRender)
+    protected override void OnParametersSet()
     {
-        // Only possible once interactive: prerendering has no navigation to hook into
-        if (firstRender)
-            _locationChangingRegistration = _navigationManager.RegisterLocationChangingHandler(OnLocationChanging);
+        // MainLayout passes a new @Body on navigation: show the new page, not the old page's error
+        Recover();
     }
 
     protected override Task OnErrorAsync(Exception exception)
@@ -35,19 +31,8 @@ else
         return Task.CompletedTask;
     }
 
-    private async ValueTask OnLocationChanging(LocationChangingContext context)
-    {
-        // Clear the old page's error before the new page renders, so an error the new page throws stays
-        await InvokeAsync(Recover);
-    }
-
     private async Task BackClick()
     {
         await _jsRuntime.InvokeVoidAsync("history.back");
-    }
-
-    public void Dispose()
-    {
-        _locationChangingRegistration?.Dispose();
     }
 }

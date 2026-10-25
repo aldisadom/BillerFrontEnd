@@ -23,7 +23,8 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 
-    // The error page stays static: it needs HttpContext, and a failing request shouldn't open a circuit
+    // The error page stays static: it needs HttpContext, and a failing request shouldn't open a circuit.
+    // Only a full request is static (UseExceptionHandler); link to /Error with forceLoad, never a plain NavigateTo.
     private IComponentRenderMode? RenderModeForPage =>
         HttpContext.Request.Path.StartsWithSegments("/Error") ? null : InteractiveServer;
 }
