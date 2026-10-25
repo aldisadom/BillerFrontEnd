@@ -20,9 +20,13 @@ else
 }
 
 @code {
-    protected override void OnInitialized()
+    private IDisposable? _locationChangingRegistration;
+
+    protected override void OnAfterRender(bool firstRender)
     {
-        _navigationManager.LocationChanged += OnLocationChanged;
+        // Only possible once interactive: prerendering has no navigation to hook into
+        if (firstRender)
+            _locationChangingRegistration = _navigationManager.RegisterLocationChangingHandler(OnLocationChanging);
     }
 
     protected override Task OnErrorAsync(Exception exception)
@@ -31,10 +35,10 @@ else
         return Task.CompletedTask;
     }
 
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    private async ValueTask OnLocationChanging(LocationChangingContext context)
     {
-        // A new page starts without the old page's error
-        _ = InvokeAsync(Recover);
+        // Clear the old page's error before the new page renders, so an error the new page throws stays
+        await InvokeAsync(Recover);
     }
 
     private async Task BackClick()
@@ -44,6 +48,6 @@ else
 
     public void Dispose()
     {
-        _navigationManager.LocationChanged -= OnLocationChanged;
+        _locationChangingRegistration?.Dispose();
     }
 }

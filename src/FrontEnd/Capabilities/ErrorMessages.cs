@@ -1,5 +1,7 @@
+using BillerContracts;
 using BillerContracts.Clients;
 using Domain.Exceptions;
+using Newtonsoft.Json;
 
 namespace FrontEnd.Capabilities;
 
@@ -25,16 +27,30 @@ public static class ErrorMessages
     /// <param name="exception"></param>
     public static string For(Exception exception) => exception switch
     {
-        ClientAPIException { Error: { } error } when string.IsNullOrEmpty(error.Message)
-            => $"The server answered {(int)error.StatusCode} {error.StatusCode}.",
-        ClientAPIException { Error: { } error } when string.IsNullOrEmpty(error.ExtendedMessage)
-            => error.Message,
+        // Task.Run(...).Wait() on the invoice pages wraps the real exception
+        AggregateException { InnerExceptions.Count: 1 } aggregate
+            => For(aggregate.InnerExceptions[0]),
         ClientAPIException { Error: { } error }
-            => $"{error.Message}: {error.ExtendedMessage}",
-        ClientAPIException or HttpRequestException
+            => ForApiError(error),
+        ClientAPIException or HttpRequestException or TaskCanceledException or JsonException
             => Unreachable,
         NotFoundException notFound
             => notFound.Message,
         _ => Unexpected
     };
+
+    private static string ForApiError(ErrorModel error)
+    {
+        bool hasMessage = !string.IsNullOrEmpty(error.Message);
+        bool hasExtendedMessage = !string.IsNullOrEmpty(error.ExtendedMessage);
+
+        if (hasMessage && hasExtendedMessage)
+            return $"{error.Message}: {error.ExtendedMessage}";
+        if (hasMessage)
+            return error.Message;
+        if (hasExtendedMessage)
+            return error.ExtendedMessage;
+
+        return $"The server answered {(int)error.StatusCode} {error.StatusCode}.";
+    }
 }
