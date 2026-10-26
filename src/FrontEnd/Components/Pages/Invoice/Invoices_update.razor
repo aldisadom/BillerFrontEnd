@@ -57,7 +57,8 @@ else
     <br />
     <b>Seller name:</b>
     <br />
-    <select class="form-select" @bind="@sellerFilter.SelectedId">
+    @* An invoice keeps its seller: its series and number belong to that seller (the API rejects a change). *@
+    <select class="form-select" @bind="@sellerFilter.SelectedId" disabled>
         @foreach (var filter in sellerFilter.SelectionList) 
         {
             <option value=@filter.Key>@filter.Value</option>
