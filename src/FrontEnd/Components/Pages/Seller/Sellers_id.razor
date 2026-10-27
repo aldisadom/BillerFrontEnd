@@ -1,15 +1,14 @@
 ﻿@page "/sellers/{IdString}"
 @using BillerContracts.Clients.Interfaces
-@using BillerContracts.Enums
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Seller
-@using BillerContracts.Requests.Series
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Seller
 @using BillerContracts.Responses.Series
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Capabilities
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
@@ -150,7 +149,7 @@ else
     private Guid sellerId;
     private SellerResponse? seller;
 
-    private SeriesListResponse? seriesList;
+    private List<SeriesResponse>? seriesList;
     private PaginationState seriesPagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<SeriesResponse> seriesQueryable = Enumerable.Empty<SeriesResponse>().AsQueryable();
 
@@ -183,8 +182,8 @@ else
 
     private async Task GetSeries()
     {
-        seriesList = await _seriesClient.Get(new SeriesGetRequest { SellerId = sellerId, PageSize = PageSize.p50 });
-        seriesQueryable = seriesList.Series.AsQueryable();
+        seriesList = await _seriesClient.GetAllForSeller(sellerId);
+        seriesQueryable = seriesList.AsQueryable();
     }
 
     private void AddSeriesClick()

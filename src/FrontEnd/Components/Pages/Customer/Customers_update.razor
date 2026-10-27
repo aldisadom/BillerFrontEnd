@@ -4,11 +4,11 @@
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
-@using BillerContracts.Requests.Series
 @using BillerContracts.Responses.Series
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Capabilities
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
@@ -96,7 +96,7 @@ else
 
         customer = await _customerClient.Get(customerId);
         customerUpdate = _mapper.Map<CustomerUpdateRequest>(customer);
-        seriesList = (await _seriesClient.Get(new SeriesGetRequest { SellerId = customer.SellerId, PageSize = BillerContracts.Enums.PageSize.p50 })).Series;
+        seriesList = await _seriesClient.GetAllForSeller(customer.SellerId);
         hasInvoices = (await _invoiceClient.Get(new InvoiceGetRequest { CustomerId = customerId, PageSize = BillerContracts.Enums.PageSize.p1 })).TotalCount > 0;
     }
 

@@ -57,17 +57,12 @@ else
     <br />
     <b>Seller name:</b>
     <br />
-    @* An invoice keeps its seller: its series and number belong to that seller (the API rejects a change). *@
     <select class="form-select" @bind="@sellerFilter.SelectedId" disabled>
         @foreach (var filter in sellerFilter.SelectionList) 
         {
             <option value=@filter.Key>@filter.Value</option>
         }
     </select>
-    if (sellerFilter.Changed())
-    {
-        Task.Run(async () => await SellerChange()).Wait();
-    }        
     <b>Customer name:</b>
     <br />
     <select class="form-select" @bind="@customerFilter.SelectedId" disabled>
@@ -76,10 +71,6 @@ else
             <option value=@filter.Key>@filter.Value</option>
         }
     </select>
-    if (customerFilter.Changed())
-    {
-        Task.Run(async () => await CustomerChange()).Wait();
-    }
     <b>Items:</b>        
     <br />
     <table class="table">
@@ -156,37 +147,6 @@ else
     private AppFilter sellerFilter { get; set; } = new();
     private AppFilter customerFilter { get; set; } = new();
     private List<AppFilter> itemFilters { get; set; } = new();
-
-    public async Task SellerChange()
-    {
-        sellerFilter.UpdateSelected();
-
-        invoiceUpdate!.Seller = _mapper.Map<SellerUpdateRequest>(await _sellerClient.Get(sellerFilter.SelectedId));
-        invoiceUpdate!.Customer = new CustomerUpdateRequest();
-        invoiceUpdate!.Items.Clear();
-
-        CustomerGetRequest customerGetRequest = new() { SellerId = invoiceUpdate!.Seller.Id };
-        customersList = await _customerClient.Get(customerGetRequest);
-
-        customerFilter = new AppFilter(false);
-        foreach (var customer in customersList.Customers)
-            customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
-    }
-    public async Task CustomerChange()
-    {
-        customerFilter.UpdateSelected();
-
-        invoiceUpdate!.Customer = _mapper.Map<CustomerUpdateRequest>(await _customerClient.Get(customerFilter.SelectedId));
-        invoiceUpdate!.Items.Clear();
-
-        ItemGetRequest itemGetRequest = new() { CustomerId = invoiceUpdate!.Customer.Id };
-        itemsList = await _itemClient.Get(itemGetRequest);
-
-        itemFilters = new List<AppFilter>();
-        itemFilters.Add(new AppFilter());
-        foreach (var item in itemsList.Items)
-            itemFilters[0].SelectionList.Add(item.Id, item.Name);
-    }
 
     public void ItemChange(int index)
     {        

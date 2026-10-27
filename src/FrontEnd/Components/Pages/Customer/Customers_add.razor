@@ -1,9 +1,9 @@
 ﻿@page "/customers/add"
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Customer
-@using BillerContracts.Requests.Series
 @using BillerContracts.Responses.Series
 @using BillerContracts.Responses
+@using FrontEnd.Capabilities
 
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
@@ -15,7 +15,7 @@
 
 <div style="display: flex; align-items: center;">
     <div style="margin-left: 20px;">
-    <button @onclick="AddClick">Add</button>
+    <button @onclick="AddClick" disabled="@(customer.SeriesId == Guid.Empty)">Add</button>
     </div>      
 </div>
 
@@ -63,6 +63,7 @@
 @code {
     private CustomerAddRequest customer = new();
     private List<SeriesResponse> seriesList = [];
+    private int seriesLoadCall;
 
     [SupplyParameterFromQuery]
     private Guid? sellerId { get; set; }
@@ -78,14 +79,32 @@
 
     private async Task LoadSeries()
     {
-        seriesList = customer.SellerId == Guid.Empty
-            ? []
-            : (await _seriesClient.Get(new SeriesGetRequest { SellerId = customer.SellerId, PageSize = BillerContracts.Enums.PageSize.p50 })).Series;
+        int call = ++seriesLoadCall;
+        seriesList = [];
+        customer.SeriesId = Guid.Empty;
+
+        List<SeriesResponse> series;
+        try
+        {
+            series = customer.SellerId == Guid.Empty ? [] : await _seriesClient.GetAllForSeller(customer.SellerId);
+        }
+        catch when (call != seriesLoadCall)
+        {
+            return;
+        }
+
+        if (call != seriesLoadCall)
+            return;
+
+        seriesList = series;
         customer.SeriesId = seriesList.FirstOrDefault()?.Id ?? Guid.Empty;
     }
 
     private async Task AddClick()
     {
+        if (customer.SeriesId == Guid.Empty)
+            return;
+
         AddResponse response = await _customerClient.Add(customer);
         
         _navigationManager.NavigateTo($"/customers/{response.Id}", false);
