@@ -2,6 +2,7 @@
 @using AutoMapper
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Customer
+@using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
 @using BillerContracts.Requests.Series
 @using BillerContracts.Responses.Series
@@ -13,6 +14,7 @@
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
 @inject IItemClient _itemClient
+@inject IInvoiceClient _invoiceClient
 @inject ISeriesClient _seriesClient
 @inject IMapper _mapper
 
@@ -45,14 +47,13 @@ else
     <br />
     <b>Series:</b>
     <br />
-    <select @bind="customerUpdate.SeriesId">
+    <select @bind="customerUpdate.SeriesId" disabled="@hasInvoices">
         <option value="@Guid.Empty">Select series</option>
         @foreach (var series in seriesList)
         {
             <option value="@series.Id">@series.Name</option>
         }
     </select>
-    <span>Changing the series affects only new invoices.</span>
     <br />
     <b>Email:</b>
     <br />
@@ -84,6 +85,7 @@ else
     private CustomerResponse? customer;
     private CustomerUpdateRequest? customerUpdate;
     private List<SeriesResponse> seriesList = [];
+    private bool hasInvoices;
 
     protected override async Task OnInitializedAsync()
     {
@@ -95,6 +97,7 @@ else
         customer = await _customerClient.Get(customerId);
         customerUpdate = _mapper.Map<CustomerUpdateRequest>(customer);
         seriesList = (await _seriesClient.Get(new SeriesGetRequest { SellerId = customer.SellerId, PageSize = BillerContracts.Enums.PageSize.p50 })).Series;
+        hasInvoices = (await _invoiceClient.Get(new InvoiceGetRequest { CustomerId = customerId, PageSize = BillerContracts.Enums.PageSize.p1 })).TotalCount > 0;
     }
 
     private async Task UpdateClick()

@@ -1,10 +1,13 @@
 ﻿@page "/sellers/{IdString}"
 @using BillerContracts.Clients.Interfaces
+@using BillerContracts.Enums
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Seller
+@using BillerContracts.Requests.Series
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Seller
+@using BillerContracts.Responses.Series
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
 @using Microsoft.AspNetCore.Components.QuickGrid
@@ -12,6 +15,7 @@
 @inject NavigationManager _navigationManager
 @inject ISellerClient _sellerClient
 @inject ICustomerClient _customerClient
+@inject ISeriesClient _seriesClient
 
 @attribute [StreamRendering]
 
@@ -30,9 +34,6 @@ else
         </div>
         <div style="margin-left: 20px;">
             <button @onclick="AddInvoiceClick">Add invoice</button>
-        </div>
-        <div style="margin-left: 20px;">
-            <button @onclick="SeriesClick">Series</button>
         </div>
     </div>
     <b>Company Name:</b>
@@ -70,6 +71,35 @@ else
     <b>Bank number:</b>
     <br />
     @seller.BankNumber
+}
+<br />
+<div style="display: flex; align-items: center;">
+    <h1>Series:</h1>
+    <div style="margin-left: 20px;">
+        <button @onclick="AddSeriesClick">Add</button>
+    </div>
+</div>
+@if (seriesList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@seriesQueryable" Pagination="seriesPagination">
+                <PropertyColumn Title="Name" Property="@(s => s.Name)" Sortable="true" Align="Align.Left" />
+                <PropertyColumn Title="Next number" Property="@(s => s.NextNumber)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => EditSeries(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => DeleteSeries(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@seriesPagination" /></div>
+    </div>
 }
 <br />
 <div style="display: flex; align-items: center;">
@@ -120,6 +150,10 @@ else
     private Guid sellerId;
     private SellerResponse? seller;
 
+    private SeriesListResponse? seriesList;
+    private PaginationState seriesPagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<SeriesResponse> seriesQueryable = Enumerable.Empty<SeriesResponse>().AsQueryable();
+
     private CustomerListResponse? customerList;
     private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<CustomerResponse> customersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
@@ -132,6 +166,7 @@ else
         }
 
         seller = await _sellerClient.Get(sellerId);
+        await GetSeries();
         await GetCustomers();
     }
 
@@ -144,6 +179,28 @@ else
     {
         await _sellerClient.Delete(sellerId);
         _navigationManager.NavigateTo("/sellers", false);
+    }
+
+    private async Task GetSeries()
+    {
+        seriesList = await _seriesClient.Get(new SeriesGetRequest { SellerId = sellerId, PageSize = PageSize.p50 });
+        seriesQueryable = seriesList.Series.AsQueryable();
+    }
+
+    private void AddSeriesClick()
+    {
+        _navigationManager.NavigateTo($"/series/add?sellerId={sellerId}", false);
+    }
+
+    void EditSeries(SeriesResponse series)
+    {
+        _navigationManager.NavigateTo($"/series/update/{series.Id}", false);
+    }
+
+    async Task DeleteSeries(SeriesResponse series)
+    {
+        await _seriesClient.Delete(series.Id);
+        await GetSeries();
     }
 
     private async Task GetCustomers()
@@ -171,11 +228,6 @@ else
     {
         await _customerClient.Delete(customer.Id);
         await GetCustomers();
-    }
-
-    private void SeriesClick()
-    {
-        _navigationManager.NavigateTo($"/series?sellerId={sellerId}", false);
     }
 
     private void AddCustomerClick()

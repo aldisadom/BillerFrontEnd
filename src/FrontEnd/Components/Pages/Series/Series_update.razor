@@ -31,8 +31,6 @@ else
     <br />
     <input type="text" maxlength="10" @bind="seriesUpdate.Name" />
     <br />
-    <span>Renaming changes only new invoices.</span>
-    <br />
     <b>Next number:</b>
     <br />
     <input type="number" @bind="seriesUpdate.NextNumber" />
@@ -65,12 +63,12 @@ else
 
         await _seriesClient.Update(seriesUpdate);
 
-        _navigationManager.NavigateTo($"/series?sellerId={series!.SellerId}", false);
+        _navigationManager.NavigateTo($"/sellers/{series!.SellerId}", false);
     }
 
     private async Task DeleteClick()
     {
         await _seriesClient.Delete(seriesId);
-        _navigationManager.NavigateTo($"/series?sellerId={series!.SellerId}", false);
+        _navigationManager.NavigateTo($"/sellers/{series!.SellerId}", false);
     }
 }

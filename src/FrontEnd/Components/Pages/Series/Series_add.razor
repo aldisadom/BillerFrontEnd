@@ -23,8 +23,6 @@
 <b>Name:</b>
 <br />
 <input type="text" maxlength="10" @bind="series.Name" />
-<br />
-<span>A new series starts at number 1.</span>
 
 @code {
     private SeriesAddRequest series = new();
@@ -42,6 +40,6 @@
     {
         await _seriesClient.Add(series);
 
-        _navigationManager.NavigateTo($"/series?sellerId={series.SellerId}", false);
+        _navigationManager.NavigateTo($"/sellers/{series.SellerId}", false);
     }
 }
