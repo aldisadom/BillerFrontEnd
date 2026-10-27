@@ -220,7 +220,7 @@ else
 
     void EditCustomer(CustomerResponse customer)
     {
-        _navigationManager.NavigateTo($"/customer/{customer.Id}", false);
+        _navigationManager.NavigateTo($"/customers/{customer.Id}", false);
     }
 
     async Task DeleteCustomer(CustomerResponse customer)

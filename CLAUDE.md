@@ -23,6 +23,11 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 - Call the API only through the clients; don't build URLs in pages.
 - Biller owns validation and stored totals. A total shown on a page must match the API's `TotalPrice`.
 - There are no tests yet (BIL-87), so check changed pages in the browser.
+- Don't add comments (Razor `@* *@`, HTML `<!-- -->`, C# `//`) or hint text on pages without asking the
+  owner first.
+- A handler that must not run while data loads, or without a required value, checks that itself
+  (`if (...) return;`). `disabled` on a button only changes what the user sees: a click can reach the
+  server before the disabled render does.
 - Plans for work only in this repo go in `docs/plans/BIL-<n>-<slug>.md` here. Plans that change
   several repos live in Biller's `docs/plans/`.
 - Before reading, comparing or using another Biller repo, put it on the branch with this branch's
