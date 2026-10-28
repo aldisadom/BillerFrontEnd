@@ -1,5 +1,4 @@
 ﻿@page "/invoices/update/{IdString}"
-@using AutoMapper
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
@@ -11,13 +10,13 @@
 @using BillerContracts.Clients.Interfaces
 @using Domain.Exceptions
 @using Domain.Models
+@using FrontEnd.MappingProfiles
 
 @inject NavigationManager _navigationManager
 @inject IInvoiceClient _invoiceClient
 @inject ICustomerClient _customerClient
 @inject ISellerClient _sellerClient
 @inject IItemClient _itemClient
-@inject IMapper _mapper
 
 @attribute [StreamRendering]
 
@@ -133,8 +132,8 @@ else
     <b>Total:</b>
     <br />
     decimal totalPrice = 0;
-    foreach (var item in invoiceUpdate.Items)
-        totalPrice += item.Price * item.Quantity;
+    foreach (var line in invoiceUpdate.Items) //go the list of items and get the price from the itemsList
+        totalPrice += itemsList!.Items.Find(i => i.Id == line.Id)!.Price * line.Quantity;
     <b>@totalPrice</b>
     <br /> 
 }
@@ -145,7 +144,6 @@ else
 
     private Guid invoiceId;
 
-    private InvoiceResponse? invoice;
     private InvoiceUpdateRequest? invoiceUpdate;
 
     private SellerListResponse? sellersList;
@@ -160,12 +158,14 @@ else
     {
         sellerFilter.UpdateSelected();
 
-        invoiceUpdate!.Seller = _mapper.Map<SellerUpdateRequest>(await _sellerClient.Get(sellerFilter.SelectedId));
-        invoiceUpdate!.Customer = new CustomerUpdateRequest();
+        invoiceUpdate!.SellerId = sellerFilter.SelectedId;
+        invoiceUpdate!.CustomerId = Guid.Empty;
         invoiceUpdate!.Items.Clear();
 
-        CustomerGetRequest customerGetRequest = new() { SellerId = invoiceUpdate!.Seller.Id };
+        CustomerGetRequest customerGetRequest = new() { SellerId = invoiceUpdate!.SellerId };
         customersList = await _customerClient.Get(customerGetRequest);
+        if (customersList.Customers.Count > 0)
+            invoiceUpdate!.CustomerId = customersList.Customers.First().Id;
 
         customerFilter = new AppFilter(false);
         foreach (var customer in customersList.Customers)
@@ -175,10 +175,10 @@ else
     {
         customerFilter.UpdateSelected();
 
-        invoiceUpdate!.Customer = _mapper.Map<CustomerUpdateRequest>(await _customerClient.Get(customerFilter.SelectedId));
+        invoiceUpdate!.CustomerId = customerFilter.SelectedId;
         invoiceUpdate!.Items.Clear();
 
-        ItemGetRequest itemGetRequest = new() { CustomerId = invoiceUpdate!.Customer.Id };
+        ItemGetRequest itemGetRequest = new() { CustomerId = invoiceUpdate!.CustomerId };
         itemsList = await _itemClient.Get(itemGetRequest);
 
         itemFilters = new List<AppFilter>();
@@ -191,7 +191,6 @@ else
     {        
         bool add = itemFilters[index].WasUnselected();
         Guid selectedId = itemFilters[index].SelectedId;
-        ItemResponse itemSelected = itemsList!.Items.Find(i => i.Id == selectedId)!;
 
         itemFilters[index].UpdateSelected();
 
@@ -205,11 +204,9 @@ else
         }  
         
         if (add)
-            invoiceUpdate!.Items.Add(new InvoiceItemUpdateRequest());
-        
+            invoiceUpdate!.Items.Add(new InvoiceItemRequest());
+
         invoiceUpdate!.Items[index].Id = selectedId;
-        invoiceUpdate!.Items[index].Price = itemSelected.Price;
-        invoiceUpdate!.Items[index].Name = itemSelected.Name;
 
         if (add)
         {
@@ -226,35 +223,35 @@ else
             throw new NotFoundException("Invalid id format");
         }
 
-        invoice = await _invoiceClient.Get(invoiceId);
-        invoiceUpdate = _mapper.Map<InvoiceUpdateRequest>(invoice);
+        InvoiceResponse invoice = await _invoiceClient.Get(invoiceId);
+        invoiceUpdate = invoice.ToUpdateRequest();
 
-        await GetSellers(invoice!.UserId);
-        await GetCustomers(invoice!.Seller!.Id);        
-        await GetItems(invoice!.Customer!.Id);
+        await GetSellers(invoice.UserId);
+        await GetCustomers(invoiceUpdate.SellerId);
+        await GetItems(invoiceUpdate.CustomerId);
 
         sellerFilter = new AppFilter(false);
         foreach (var seller in sellersList!.Sellers)
             sellerFilter.SelectionList.Add(seller.Id, seller.CompanyName);
 
-        sellerFilter.UpdateSelected(invoice!.Seller!.Id);
+        sellerFilter.UpdateSelected(invoiceUpdate.SellerId);
 
         customerFilter = new AppFilter(false);
         foreach (var customer in customersList!.Customers)
             customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
 
-        customerFilter.UpdateSelected(invoice!.Customer!.Id);
+        customerFilter.UpdateSelected(invoiceUpdate.CustomerId);
 
         itemFilters = new List<AppFilter>();
-        for (int i = 0; i < invoice!.Items!.Count + 1; i++)
+        for (int i = 0; i < invoiceUpdate.Items.Count + 1; i++)
         {
             itemFilters.Add(new AppFilter());
             foreach (var item in itemsList!.Items)
                 itemFilters[i].SelectionList.Add(item.Id, item.Name);
         }
 
-        for (int i = 0; i < invoice!.Items!.Count; i++)
-            itemFilters[i].UpdateSelected(invoice!.Items[i].Id);
+        for (int i = 0; i < invoiceUpdate.Items.Count; i++)
+            itemFilters[i].UpdateSelected(invoiceUpdate.Items[i].Id);
     }
 
     private async Task GetSellers(Guid userId)
