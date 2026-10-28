@@ -164,12 +164,13 @@ else
 
         CustomerGetRequest customerGetRequest = new() { SellerId = invoiceUpdate!.SellerId };
         customersList = await _customerClient.Get(customerGetRequest);
-        if (customersList.Customers.Count > 0)
-            invoiceUpdate!.CustomerId = customersList.Customers.First().Id;
 
         customerFilter = new AppFilter(false);
         foreach (var customer in customersList.Customers)
             customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
+
+        customerFilter.SelectFirstFromList();
+        itemFilters.Clear();
     }
     public async Task CustomerChange()
     {
