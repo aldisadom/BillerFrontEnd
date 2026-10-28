@@ -20,7 +20,6 @@ public static class StartupMapper
             mc.AddProfile(new ItemMappingProfile());
             mc.AddProfile(new CustomerMappingProfile());
             mc.AddProfile(new SellerMappingProfile());
-            mc.AddProfile(new InvoiceMappingProfile());
         });
 
         mapperConfig.AssertConfigurationIsValid();

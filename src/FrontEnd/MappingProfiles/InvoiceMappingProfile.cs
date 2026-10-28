@@ -1,22 +1,31 @@
-﻿using AutoMapper;
-using BillerContracts.Requests.Invoice;
+﻿using BillerContracts.Requests.Invoice;
 using BillerContracts.Responses.Invoice;
 
 namespace FrontEnd.MappingProfiles;
 
-/// <summary>
-/// Mapper profiles
-/// </summary>
-public class InvoiceMappingProfile : Profile
+public static class InvoiceResponseExtensions
 {
-    /// <summary>
-    /// Mapper profile
-    /// </summary>
-    public InvoiceMappingProfile()
+    public static InvoiceUpdateRequest ToUpdateRequest(this InvoiceResponse from)
     {
-        //source, destination (which parameters must be mapped)
-        CreateMap<InvoiceItemResponse, InvoiceItemUpdateRequest>(MemberList.Destination);
+        return new InvoiceUpdateRequest
+        {
+            Id = from.Id,
+            SellerId = from.Seller?.Id ?? throw new InvalidOperationException($"Invoice {from.Id} has no seller"),
+            CustomerId = from.Customer?.Id ?? throw new InvalidOperationException($"Invoice {from.Id} has no customer"),
+            Items = from.Items?.Select(i => i.ToUpdateRequest()).ToList() ?? [],
+            Comments = from.Comments,
+            DueDate = from.DueDate,
+            CreatedDate = from.CreatedDate
+        };
+    }
 
-        CreateMap<InvoiceResponse, InvoiceUpdateRequest>(MemberList.Destination);
+    public static InvoiceItemRequest ToUpdateRequest(this InvoiceItemResponse from)
+    {
+        return new InvoiceItemRequest
+        {
+            Id = from.Id,
+            Quantity = from.Quantity,
+            Comments = from.Comments
+        };
     }
 }
