@@ -1,7 +1,7 @@
 # Review rules for BillerFrontEnd
 
 Failure here looks like:
-- An amount, total, date or status on screen differs from what the API returned. Pages add up line totals themselves (`Invoices_id.razor:103`, `Invoices_add.razor:118`), and those must match Biller's `TotalPrice`.
+- An amount, total, date or status on screen differs from what the API returned. Pages add up line totals themselves (`Invoices_id.razor:103`, `Invoices_add.razor:118`), and those must match Biller's `TotalPrice`. `Invoices_update.razor` is the exception: it shows the total after saving, from the current item prices, as `PUT /invoices` will save it (BIL-86).
 - A document is generated in the wrong language or type (the language is fixed to LT in `Invoices_id.razor:160`, BIL-69), or two downloads get the same file name.
 - An API error (400, 404) isn't shown to the user, or it ends the Blazor circuit. No page catches `ClientAPIException` today.
 - A form sends a field the user didn't set, or drops one. Update requests replace the whole record, so a property a mapping method forgets is saved as empty.

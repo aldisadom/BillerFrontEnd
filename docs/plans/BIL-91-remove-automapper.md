@@ -15,7 +15,7 @@ BillerContracts and BillioIntegrationTest don't use it.
 | `src/FrontEnd/FrontEnd.csproj`, `src/Domain/Domain.csproj` | `AutoMapper` 13.0.1. No code in `src/Domain` uses it |
 | `src/FrontEnd/MappingProfiles/` | 5 profiles with 6 maps, all response → update request, `MemberList.Destination` |
 | `src/FrontEnd/Capabilities/StartupMapper.cs`, `Program.cs:19` | `ConfigureAutoMapper()`, which runs `AssertConfigurationIsValid()` at startup |
-| Pages | `_mapper.Map<…>` in `Customers_update.razor:90`, `Invoices_update.razor:164,179,231`, `Items_update.razor:62`, `Sellers_update.razor:87`, `Users_update.razor:66`. `Invoices_id.razor:15` injects `IMapper` but never uses it |
+| Pages | `_mapper.Map<…>` in `Customers_update.razor:90`, `Invoices_update.razor:164,179,231` (done in BIL-86), `Items_update.razor:62`, `Sellers_update.razor:87`, `Users_update.razor:66`. `Invoices_id.razor:15` injects `IMapper` but never uses it |
 
 Every update-request property has a response property with the same name, so each map is a plain copy:
 
@@ -25,8 +25,8 @@ Every update-request property has a response property with the same name, so eac
 | `ItemResponse` → `ItemUpdateRequest` | Id, Name, Price, Quantity | CustomerId |
 | `SellerResponse` → `SellerUpdateRequest` | Id, CompanyNumber, CompanyName, Street, City, State, Email, Phone, BankName, BankNumber | UserId |
 | `UserResponse` → `UserUpdateRequest` | Id, Name, LastName | Email |
-| `InvoiceItemResponse` → `InvoiceItemUpdateRequest` | Id, Quantity, Name, Price, Comments | |
-| `InvoiceResponse` → `InvoiceUpdateRequest` | Id, InvoiceNumber, Seller, Customer, Items (nested maps above), Comments, DueDate, CreatedDate | UserId, TotalPrice, Status |
+| `InvoiceItemResponse` → `InvoiceItemRequest` (done in BIL-86) | Id, Quantity, Comments | Name, Price |
+| `InvoiceResponse` → `InvoiceUpdateRequest` (done in BIL-86) | Id, InvoiceNumber, SellerId (`Seller.Id`), CustomerId (`Customer.Id`), Items (map above), Comments, DueDate, CreatedDate | UserId, TotalPrice, Status, the rest of Seller and Customer |
 
 ## Design decisions
 
@@ -47,12 +47,12 @@ Every update-request property has a response property with the same name, so eac
 
 ## Steps
 
-1. Write the 6 methods in the 5 `MappingProfiles/*.cs` files. Remove the `Profile` classes.
-2. In the 6 pages, replace `_mapper.Map<X>(y)` with `y.ToUpdateRequest()`, and remove `@using AutoMapper`
+1. Write the 4 remaining methods in the other 4 `MappingProfiles/*.cs` files (BIL-86 did the invoice ones). Remove the `Profile` classes.
+2. In the 4 remaining update pages, replace `_mapper.Map<X>(y)` with `y.ToUpdateRequest()`, and remove `@using AutoMapper`
    and `@inject IMapper _mapper` (also from `Invoices_id.razor`, which doesn't use it).
 3. Delete `Capabilities/StartupMapper.cs` and remove `.ConfigureAutoMapper()` from `Program.cs`.
 4. Remove the `AutoMapper` PackageReference from `src/FrontEnd/FrontEnd.csproj` and `src/Domain/Domain.csproj`.
-5. Mapping tests (design decision 4), one per method.
+5. Mapping tests (design decision 4), one per method, including the 2 invoice methods from BIL-86.
 6. Check:
    - `grep -rn AutoMapper src` finds nothing.
    - `dotnet build BillerFrontEnd.sln -c Release` passes, and the tests pass.
@@ -68,6 +68,10 @@ Every update-request property has a response property with the same name, so eac
   loses `InvoiceName`/`InvoiceNumber` and gains `SeriesId`. Whichever lands second updates the mapping
   methods. The tests then fail until it does.
 - **BIL-75 (units):** adds a unit to items. The item mapping must copy it, and the test will say so.
+- **BIL-86 (invoices by id, Biller's `docs/plans/BIL-86-invoice-remove-serialized-data.md`):** already
+  replaced the two invoice maps with `InvoiceResponseExtensions.ToUpdateRequest()` for BillerContracts
+  3.0.1 (`SellerId`, `CustomerId`, lines with `Id`, `Quantity`, `Comments`), and removed the profile
+  from `StartupMapper`, so nothing checks those two methods until step 5 adds their tests.
 
 ## Risk
 
