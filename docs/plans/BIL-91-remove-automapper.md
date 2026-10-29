@@ -35,9 +35,12 @@ Every update-request property has a response property with the same name, so eac
    `ToUpdateRequest(this <X>Response from)`. Pages call `item.ToUpdateRequest()`.
 2. **Set every request property explicitly**, in the request's declaration order, so a review can
    check them line by line against the contract.
-3. **Missing seller or customer is an error.** `InvoiceResponse.Seller` and `.Customer` are nullable,
-   but `InvoiceUpdateRequest` requires them. Throw `InvalidOperationException($"Invoice {from.Id} has no seller")`
-   (and the same for customer) instead of passing `null` on. `Items` of `null` becomes an empty list.
+3. **Seller and customer ids are copied as they are.** From BillerContracts 4.0.1 (BillerContracts #13,
+   BIL-65), `InvoiceResponse` has `SellerId`, `SellerName`, `CustomerId` and `CustomerName` instead of the
+   nullable `Seller` and `Customer`, so `ToUpdateRequest` copies the two ids and nothing can be missing.
+   The two `InvalidOperationException`s (`$"Invoice {from.Id} has no seller"`, and the same for customer)
+   that BIL-86 added for the nullable objects go. An empty id from Biller would still fail on save: the
+   update validator rejects it ("Please specify seller Id"). `Items` of `null` becomes an empty list.
 4. **Tests replace the startup check.** `AssertConfigurationIsValid` caught unmapped properties
    at startup. Its replacement is one unit test per method, building the response with every property
    non-default and checking that every request property got its source value, like Biller's
@@ -65,8 +68,9 @@ Every update-request property has a response property with the same name, so eac
   step) and this plan in one PR, so the new mapping is never untested. The mapping tests replace
   BIL-87's AutoMapper profile tests.
 - **BIL-65 (series):** removes `InvoiceNumber` from `InvoiceUpdateRequest`, and `CustomerUpdateRequest`
-  loses `InvoiceName`/`InvoiceNumber` and gains `SeriesId`. Whichever lands second updates the mapping
-  methods. The tests then fail until it does.
+  loses `InvoiceName`/`InvoiceNumber` and gains `SeriesId`. In BillerContracts 4.0.1 `InvoiceResponse`
+  also swaps `Seller`/`Customer` for `SellerId`/`SellerName` and `CustomerId`/`CustomerName` (design
+  decision 3). Whichever lands second updates the mapping methods. The tests then fail until it does.
 - **BIL-75 (units):** adds a unit to items. The item mapping must copy it, and the test will say so.
 - **BIL-86 (invoices by id, Biller's `docs/plans/BIL-86-invoice-remove-serialized-data.md`):** already
   replaced the two invoice maps with `InvoiceResponseExtensions.ToUpdateRequest()` for BillerContracts
