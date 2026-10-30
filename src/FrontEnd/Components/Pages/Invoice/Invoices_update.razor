@@ -1,12 +1,8 @@
 ﻿@page "/invoices/update/{IdString}"
-@using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
-@using BillerContracts.Requests.Seller
-@using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Invoice
 @using BillerContracts.Responses.Item
-@using BillerContracts.Responses.Seller
 @using BillerContracts.Clients.Interfaces
 @using Domain.Exceptions
 @using Domain.Models
@@ -14,8 +10,6 @@
 
 @inject NavigationManager _navigationManager
 @inject IInvoiceClient _invoiceClient
-@inject ICustomerClient _customerClient
-@inject ISellerClient _sellerClient
 @inject IItemClient _itemClient
 
 @attribute [StreamRendering]
@@ -56,20 +50,12 @@ else
     <br />
     <b>Seller name:</b>
     <br />
-    <select class="form-select" @bind="@sellerFilter.SelectedId" disabled>
-        @foreach (var filter in sellerFilter.SelectionList) 
-        {
-            <option value=@filter.Key>@filter.Value</option>
-        }
-    </select>
+    @invoice?.SellerName
+    <br />
     <b>Customer name:</b>
     <br />
-    <select class="form-select" @bind="@customerFilter.SelectedId" disabled>
-        @foreach (var filter in customerFilter.SelectionList)
-        {
-            <option value=@filter.Key>@filter.Value</option>
-        }
-    </select>
+    @invoice?.CustomerName
+    <br />
     <b>Items:</b>        
     <br />
     <table class="table">
@@ -139,12 +125,8 @@ else
     private InvoiceResponse? invoice;
     private InvoiceUpdateRequest? invoiceUpdate;
 
-    private SellerListResponse? sellersList;
-    private CustomerListResponse? customersList;
     private ItemListResponse? itemsList;
 
-    private AppFilter sellerFilter { get; set; } = new();
-    private AppFilter customerFilter { get; set; } = new();
     private List<AppFilter> itemFilters { get; set; } = new();
 
     public void ItemChange(int index)
@@ -186,21 +168,7 @@ else
         invoice = await _invoiceClient.Get(invoiceId);
         invoiceUpdate = invoice.ToUpdateRequest();
 
-        await GetSellers(invoice.UserId);
-        await GetCustomers(invoiceUpdate.SellerId);
         await GetItems(invoiceUpdate.CustomerId);
-
-        sellerFilter = new AppFilter(false);
-        foreach (var seller in sellersList!.Sellers)
-            sellerFilter.SelectionList.Add(seller.Id, seller.CompanyName);
-
-        sellerFilter.UpdateSelected(invoiceUpdate.SellerId);
-
-        customerFilter = new AppFilter(false);
-        foreach (var customer in customersList!.Customers)
-            customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
-
-        customerFilter.UpdateSelected(invoiceUpdate.CustomerId);
 
         itemFilters = new List<AppFilter>();
         for (int i = 0; i < invoiceUpdate.Items.Count + 1; i++)
@@ -213,16 +181,6 @@ else
         for (int i = 0; i < invoiceUpdate.Items.Count; i++)
             itemFilters[i].UpdateSelected(invoiceUpdate.Items[i].Id);
     }
-
-    private async Task GetSellers(Guid userId)
-    {
-        sellersList = await _sellerClient.Get(new SellerGetRequest() { UserId = userId });
-    }
-
-    private async Task GetCustomers(Guid sellerId)
-    {
-        customersList = await _customerClient.Get(new CustomerGetRequest() { SellerId = sellerId });
-    }    
 
     private async Task GetItems(Guid customerId)
     {
