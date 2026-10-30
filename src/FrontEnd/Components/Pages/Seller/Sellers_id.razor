@@ -165,8 +165,7 @@ else
         }
 
         seller = await _sellerClient.Get(sellerId);
-        await GetSeries();
-        await GetCustomers();
+        await Task.WhenAll(GetSeries(), GetCustomers());
     }
 
     private void EditClick()

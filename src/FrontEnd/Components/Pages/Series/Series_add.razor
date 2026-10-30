@@ -38,6 +38,9 @@
 
     private async Task AddClick()
     {
+        if (series.SellerId == Guid.Empty)
+            return;
+
         await _seriesClient.Add(series);
 
         _navigationManager.NavigateTo($"/sellers/{series.SellerId}", false);

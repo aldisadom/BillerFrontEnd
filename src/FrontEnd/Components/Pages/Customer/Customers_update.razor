@@ -96,13 +96,17 @@ else
 
         customer = await _customerClient.Get(customerId);
         customerUpdate = _mapper.Map<CustomerUpdateRequest>(customer);
-        seriesList = await _seriesClient.GetAllForSeller(customer.SellerId);
-        hasInvoices = (await _invoiceClient.Get(new InvoiceGetRequest { CustomerId = customerId, PageSize = BillerContracts.Enums.PageSize.p1 })).TotalCount > 0;
+        var seriesTask = _seriesClient.GetAllForSeller(customer.SellerId);
+        var invoicesTask = _invoiceClient.Get(new InvoiceGetRequest { CustomerId = customerId, PageSize = BillerContracts.Enums.PageSize.p1 });
+        await Task.WhenAll(seriesTask, invoicesTask);
+
+        seriesList = seriesTask.Result;
+        hasInvoices = invoicesTask.Result.TotalCount > 0;
     }
 
     private async Task UpdateClick()
     {
-        if (customerUpdate == null)
+        if (customerUpdate == null || customerUpdate.SeriesId == Guid.Empty)
             return;
 
         await _customerClient.Update(customerUpdate);
