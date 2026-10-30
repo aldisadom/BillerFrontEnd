@@ -26,9 +26,10 @@
     </div>
     <div class="card-body">
         <QuickGrid TGridItem="InvoiceResponse" @ref="grid" ItemsProvider="LoadInvoices" Pagination="pagination">
-            <PropertyColumn Title="Seller" Property="@(i => i.Seller!.CompanyName)" Align="Align.Left" Class=" country-name" />
-            <PropertyColumn Title="Customer" Property="@(i => i.Customer!.CompanyName)" Align="Align.Left" Class=" country-name" />
-            <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Align="Align.Right" />
+            <PropertyColumn Title="Seller" Property="@(i => i.SellerName)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Customer" Property="@(i => i.CustomerName)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
+            <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Format="D6" Align="Align.Right" />
             <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
             <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" />
             <TemplateColumn Title="Status">

@@ -38,9 +38,9 @@ else
             <button @onclick="DeleteClick">Delete</button>
         </div>
     </div>    
-    <b>Invoice number:</b>
+    <b>Invoice:</b>
     <br />
-    <input type="number" @bind="invoiceUpdate.InvoiceNumber" />
+    @invoice?.SeriesName @invoice?.InvoiceNumber.ToString("D6")
     <br />
     <b>Date created:</b>
     <br />
@@ -56,28 +56,20 @@ else
     <br />
     <b>Seller name:</b>
     <br />
-    <select class="form-select" @bind="@sellerFilter.SelectedId">
+    <select class="form-select" @bind="@sellerFilter.SelectedId" disabled>
         @foreach (var filter in sellerFilter.SelectionList) 
         {
             <option value=@filter.Key>@filter.Value</option>
         }
     </select>
-    if (sellerFilter.Changed())
-    {
-        Task.Run(async () => await SellerChange()).Wait();
-    }        
     <b>Customer name:</b>
     <br />
-    <select class="form-select" @bind="@customerFilter.SelectedId">
+    <select class="form-select" @bind="@customerFilter.SelectedId" disabled>
         @foreach (var filter in customerFilter.SelectionList)
         {
             <option value=@filter.Key>@filter.Value</option>
         }
     </select>
-    if (customerFilter.Changed())
-    {
-        Task.Run(async () => await CustomerChange()).Wait();
-    }
     <b>Items:</b>        
     <br />
     <table class="table">
@@ -144,6 +136,7 @@ else
 
     private Guid invoiceId;
 
+    private InvoiceResponse? invoice;
     private InvoiceUpdateRequest? invoiceUpdate;
 
     private SellerListResponse? sellersList;
@@ -153,40 +146,6 @@ else
     private AppFilter sellerFilter { get; set; } = new();
     private AppFilter customerFilter { get; set; } = new();
     private List<AppFilter> itemFilters { get; set; } = new();
-
-    public async Task SellerChange()
-    {
-        sellerFilter.UpdateSelected();
-
-        invoiceUpdate!.SellerId = sellerFilter.SelectedId;
-        invoiceUpdate!.CustomerId = Guid.Empty;
-        invoiceUpdate!.Items.Clear();
-
-        CustomerGetRequest customerGetRequest = new() { SellerId = invoiceUpdate!.SellerId };
-        customersList = await _customerClient.Get(customerGetRequest);
-
-        customerFilter = new AppFilter(false);
-        foreach (var customer in customersList.Customers)
-            customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
-
-        customerFilter.SelectFirstFromList();
-        itemFilters.Clear();
-    }
-    public async Task CustomerChange()
-    {
-        customerFilter.UpdateSelected();
-
-        invoiceUpdate!.CustomerId = customerFilter.SelectedId;
-        invoiceUpdate!.Items.Clear();
-
-        ItemGetRequest itemGetRequest = new() { CustomerId = invoiceUpdate!.CustomerId };
-        itemsList = await _itemClient.Get(itemGetRequest);
-
-        itemFilters = new List<AppFilter>();
-        itemFilters.Add(new AppFilter());
-        foreach (var item in itemsList.Items)
-            itemFilters[0].SelectionList.Add(item.Id, item.Name);
-    }
 
     public void ItemChange(int index)
     {        
@@ -224,7 +183,7 @@ else
             throw new NotFoundException("Invalid id format");
         }
 
-        InvoiceResponse invoice = await _invoiceClient.Get(invoiceId);
+        invoice = await _invoiceClient.Get(invoiceId);
         invoiceUpdate = invoice.ToUpdateRequest();
 
         await GetSellers(invoice.UserId);

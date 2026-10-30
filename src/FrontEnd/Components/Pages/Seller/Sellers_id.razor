@@ -5,13 +5,16 @@
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Seller
+@using BillerContracts.Responses.Series
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Capabilities
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
 @inject ISellerClient _sellerClient
 @inject ICustomerClient _customerClient
+@inject ISeriesClient _seriesClient
 
 @attribute [StreamRendering]
 
@@ -70,6 +73,35 @@ else
 }
 <br />
 <div style="display: flex; align-items: center;">
+    <h1>Series:</h1>
+    <div style="margin-left: 20px;">
+        <button @onclick="AddSeriesClick">Add</button>
+    </div>
+</div>
+@if (seriesList == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <QuickGrid Items="@seriesQueryable" Pagination="seriesPagination">
+                <PropertyColumn Title="Name" Property="@(s => s.Name)" Sortable="true" Align="Align.Left" />
+                <PropertyColumn Title="Next number" Property="@(s => s.NextNumber)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => EditSeries(context))" class="btn btn-info">Edit</button>
+                    <button @onclick="@(() => DeleteSeries(context))" class="btn btn-danger">Delete</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@seriesPagination" /></div>
+    </div>
+}
+<br />
+<div style="display: flex; align-items: center;">
     <h1>Clients:</h1>
     <div style="margin-left: 20px;">
         <button @onclick="AddCustomerClick">Add</button>
@@ -94,7 +126,7 @@ else
                     </ColumnOptions>
                 </PropertyColumn>
                 <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
-                <PropertyColumn Title="Invoice name" Property="@(i => i.InvoiceName)" Align="Align.Right" />
+                <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
                 <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
                 <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
                 <PropertyColumn Title="State" Property="@(i => i.State)" Align="Align.Right" />
@@ -117,6 +149,10 @@ else
     private Guid sellerId;
     private SellerResponse? seller;
 
+    private List<SeriesResponse>? seriesList;
+    private PaginationState seriesPagination = new PaginationState { ItemsPerPage = 50 };
+    private IQueryable<SeriesResponse> seriesQueryable = Enumerable.Empty<SeriesResponse>().AsQueryable();
+
     private CustomerListResponse? customerList;
     private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<CustomerResponse> customersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
@@ -129,7 +165,7 @@ else
         }
 
         seller = await _sellerClient.Get(sellerId);
-        await GetCustomers();
+        await Task.WhenAll(GetSeries(), GetCustomers());
     }
 
     private void EditClick()
@@ -141,6 +177,28 @@ else
     {
         await _sellerClient.Delete(sellerId);
         _navigationManager.NavigateTo("/sellers", false);
+    }
+
+    private async Task GetSeries()
+    {
+        seriesList = await _seriesClient.GetAllForSeller(sellerId);
+        seriesQueryable = seriesList.AsQueryable();
+    }
+
+    private void AddSeriesClick()
+    {
+        _navigationManager.NavigateTo($"/series/add?sellerId={sellerId}", false);
+    }
+
+    void EditSeries(SeriesResponse series)
+    {
+        _navigationManager.NavigateTo($"/series/update/{series.Id}", false);
+    }
+
+    async Task DeleteSeries(SeriesResponse series)
+    {
+        await _seriesClient.Delete(series.Id);
+        await GetSeries();
     }
 
     private async Task GetCustomers()
@@ -161,7 +219,7 @@ else
 
     void EditCustomer(CustomerResponse customer)
     {
-        _navigationManager.NavigateTo($"/customer/{customer.Id}", false);
+        _navigationManager.NavigateTo($"/customers/{customer.Id}", false);
     }
 
     async Task DeleteCustomer(CustomerResponse customer)

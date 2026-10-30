@@ -27,7 +27,7 @@ public static class ErrorMessages
     /// <param name="exception"></param>
     public static string For(Exception exception) => exception switch
     {
-        // Task.Run(...).Wait() on the invoice pages wraps the real exception
+        // Task.Run(...).Wait() on the invoice add page wraps the real exception
         AggregateException { InnerExceptions.Count: 1 } aggregate
             => For(aggregate.InnerExceptions[0]),
         ClientAPIException { Error: { } error }

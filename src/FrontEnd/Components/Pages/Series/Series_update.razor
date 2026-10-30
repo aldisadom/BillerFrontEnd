@@ -1,0 +1,74 @@
+﻿@page "/series/update/{IdString}"
+@using BillerContracts.Clients.Interfaces
+@using BillerContracts.Requests.Series
+@using BillerContracts.Responses.Series
+@using Domain.Exceptions
+@using FrontEnd.MappingProfiles
+
+@inject NavigationManager _navigationManager
+@inject ISeriesClient _seriesClient
+
+@attribute [StreamRendering]
+
+<PageTitle>Series update</PageTitle>
+@if (seriesUpdate == null)
+{
+    <h1>Series update</h1>
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div style="display: flex; align-items: center;">
+        <h1>@seriesUpdate.Name</h1>
+        <div style="margin-left: 20px;">
+            <button @onclick="UpdateClick">Update</button>
+        </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="DeleteClick">Delete</button>
+        </div>
+    </div>
+    <b>Name:</b>
+    <br />
+    <input type="text" maxlength="10" @bind="seriesUpdate.Name" />
+    <br />
+    <b>Next number:</b>
+    <br />
+    <input type="number" @bind="seriesUpdate.NextNumber" />
+    <br />
+}
+
+@code {
+    [Parameter]
+    public string IdString { get; set; } = string.Empty;
+
+    private Guid seriesId;
+    private SeriesResponse? series;
+    private SeriesUpdateRequest? seriesUpdate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(IdString) || !Guid.TryParse(IdString, out seriesId))
+        {
+            throw new NotFoundException("Invalid id format");
+        }
+
+        series = await _seriesClient.Get(seriesId);
+        seriesUpdate = series.ToUpdateRequest();
+    }
+
+    private async Task UpdateClick()
+    {
+        if (seriesUpdate == null)
+            return;
+
+        await _seriesClient.Update(seriesUpdate);
+
+        _navigationManager.NavigateTo($"/sellers/{series!.SellerId}", false);
+    }
+
+    private async Task DeleteClick()
+    {
+        await _seriesClient.Delete(seriesId);
+        _navigationManager.NavigateTo($"/sellers/{series!.SellerId}", false);
+    }
+}

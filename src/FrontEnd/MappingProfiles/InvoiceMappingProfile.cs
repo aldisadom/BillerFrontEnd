@@ -10,9 +10,8 @@ public static class InvoiceResponseExtensions
         return new InvoiceUpdateRequest
         {
             Id = from.Id,
-            InvoiceNumber = from.InvoiceNumber,
-            SellerId = from.Seller?.Id ?? throw new InvalidOperationException($"Invoice {from.Id} has no seller"),
-            CustomerId = from.Customer?.Id ?? throw new InvalidOperationException($"Invoice {from.Id} has no customer"),
+            SellerId = from.SellerId,
+            CustomerId = from.CustomerId,
             Items = from.Items?.Select(i => i.ToUpdateRequest()).ToList() ?? [],
             Comments = from.Comments,
             DueDate = from.DueDate,

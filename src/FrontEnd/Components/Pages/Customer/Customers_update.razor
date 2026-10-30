@@ -2,15 +2,20 @@
 @using AutoMapper
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Customer
+@using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
+@using BillerContracts.Responses.Series
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Capabilities
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
 @inject IItemClient _itemClient
+@inject IInvoiceClient _invoiceClient
+@inject ISeriesClient _seriesClient
 @inject IMapper _mapper
 
 @attribute [StreamRendering]
@@ -40,13 +45,15 @@ else
     <br />
     <input type="text" @bind="customerUpdate.CompanyNumber" />
     <br />
-    <b>Invoice name:</b>
+    <b>Series:</b>
     <br />
-    <input type="text" @bind="customerUpdate.InvoiceName" />
-    <br />
-    <b>Invoice number:</b>
-    <br />
-    <input type="text" @bind="customerUpdate.InvoiceNumber" />
+    <select @bind="customerUpdate.SeriesId" disabled="@hasInvoices">
+        <option value="@Guid.Empty">Select series</option>
+        @foreach (var series in seriesList)
+        {
+            <option value="@series.Id">@series.Name</option>
+        }
+    </select>
     <br />
     <b>Email:</b>
     <br />
@@ -77,6 +84,8 @@ else
     private Guid customerId;
     private CustomerResponse? customer;
     private CustomerUpdateRequest? customerUpdate;
+    private List<SeriesResponse> seriesList = [];
+    private bool hasInvoices;
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,11 +96,17 @@ else
 
         customer = await _customerClient.Get(customerId);
         customerUpdate = _mapper.Map<CustomerUpdateRequest>(customer);
+        var seriesTask = _seriesClient.GetAllForSeller(customer.SellerId);
+        var invoicesTask = _invoiceClient.Get(new InvoiceGetRequest { CustomerId = customerId, PageSize = BillerContracts.Enums.PageSize.p1 });
+        await Task.WhenAll(seriesTask, invoicesTask);
+
+        seriesList = seriesTask.Result;
+        hasInvoices = invoicesTask.Result.TotalCount > 0;
     }
 
     private async Task UpdateClick()
     {
-        if (customerUpdate == null)
+        if (customerUpdate == null || customerUpdate.SeriesId == Guid.Empty)
             return;
 
         await _customerClient.Update(customerUpdate);
