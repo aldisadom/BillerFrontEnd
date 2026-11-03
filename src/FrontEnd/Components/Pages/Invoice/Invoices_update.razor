@@ -1,11 +1,11 @@
 ﻿@page "/invoices/update/{IdString}"
 @using BillerContracts.Requests.Invoice
-@using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Invoice
 @using BillerContracts.Responses.Item
 @using BillerContracts.Clients.Interfaces
 @using Domain.Exceptions
 @using Domain.Models
+@using FrontEnd.Capabilities
 @using FrontEnd.MappingProfiles
 
 @inject NavigationManager _navigationManager
@@ -88,7 +88,7 @@ else
                     @if (itemFilters[index].IsValid())
                     {
                         Guid id = itemFilters[index].SelectedId;
-                        ItemResponse item = itemsList!.Items.Find(i => i.Id == id)!;
+                        ItemResponse item = itemsList!.Find(i => i.Id == id)!;
                         <td>
                             <input type="text" @bind="invoiceUpdate.Items[index].Comments" />
                         </td>
@@ -111,7 +111,7 @@ else
     <br />
     decimal totalPrice = 0;
     foreach (var line in invoiceUpdate.Items) //go the list of items and get the price from the itemsList
-        totalPrice += itemsList!.Items.Find(i => i.Id == line.Id)!.Price * line.Quantity;
+        totalPrice += itemsList!.Find(i => i.Id == line.Id)!.Price * line.Quantity;
     <b>@totalPrice</b>
     <br /> 
 }
@@ -125,7 +125,7 @@ else
     private InvoiceResponse? invoice;
     private InvoiceUpdateRequest? invoiceUpdate;
 
-    private ItemListResponse? itemsList;
+    private List<ItemResponse>? itemsList;
 
     private List<AppFilter> itemFilters { get; set; } = new();
 
@@ -153,7 +153,7 @@ else
         if (add)
         {
             itemFilters.Add(new AppFilter());
-            foreach (var item in itemsList!.Items)
+            foreach (var item in itemsList!)
                 itemFilters[itemFilters.Count - 1].SelectionList.Add(item.Id, item.Name);
         }            
     }
@@ -174,7 +174,7 @@ else
         for (int i = 0; i < invoiceUpdate.Items.Count + 1; i++)
         {
             itemFilters.Add(new AppFilter());
-            foreach (var item in itemsList!.Items)
+            foreach (var item in itemsList!)
                 itemFilters[i].SelectionList.Add(item.Id, item.Name);
         }
 
@@ -184,7 +184,7 @@ else
 
     private async Task GetItems(Guid customerId)
     {
-        itemsList = await _itemClient.Get(new ItemGetRequest() { CustomerId = customerId });
+        itemsList = await _itemClient.GetAllForCustomer(customerId);
     }
 
     private async Task UpdateClick()
