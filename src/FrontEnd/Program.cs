@@ -1,6 +1,7 @@
 using BillerContracts.Clients;
 using FrontEnd.Capabilities;
 using FrontEnd.Components;
+using Serilog;
 
 namespace FrontEnd;
 
@@ -20,6 +21,10 @@ public class Program
             .AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        builder.Host.UseSerilog((context, configuration) => configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .Enrich.FromLogContext());
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -33,6 +38,7 @@ public class Program
         app.UseHttpsRedirection();
 
         app.UseStaticFiles();
+        app.UseSerilogRequestLogging();
         app.UseAntiforgery();
 
         app.MapRazorComponents<App>()
