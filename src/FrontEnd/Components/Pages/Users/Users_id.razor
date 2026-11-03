@@ -153,7 +153,7 @@ else
 
     void EditSeller(SellerResponse item)
     {
-        _navigationManager.NavigateTo($"/items/{item.Id}", false);
+        _navigationManager.NavigateTo($"/sellers/{item.Id}", false);
     }
 
     async Task DeleteSeller(SellerResponse item)
