@@ -1,5 +1,7 @@
 ﻿@page "/users"
 @using BillerContracts.Clients.Interfaces
+@using BillerContracts.Enums
+@using BillerContracts.Requests.User
 @using BillerContracts.Responses.User
 @using Microsoft.AspNetCore.Components.QuickGrid
 
@@ -16,56 +18,65 @@
     </div>
 </div>
 
-@if (userList == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="card">
-        <div class="card-header">
-        </div>
-        <div class="card-body">
-            <QuickGrid Items="@UsersQueryable" Pagination="pagination">
-                <PropertyColumn Title="Email" Property="@(i => i.Email)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="User email..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
-                <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Right" />
-                <PropertyColumn Title="Last name" Property="@(i => i.LastName)" Align="Align.Right" />                
-                <!--   <PropertyColumn Property="@(p => p.da)" Format="yyyy-MM-dd" Sortable="true" /> -->
-                <TemplateColumn Title="Action">
-                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
-                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
-                </TemplateColumn>
-            </QuickGrid>
-        </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+<div class="card">
+    <div class="card-header">
+        <b>Page size:</b>
+        <select class="form-select" @bind="selectedPageSize" @bind:after="OnPageSizeChanged">
+            <option value="@PageSize.p10">10</option>
+            <option value="@PageSize.p25">25</option>
+            <option value="@PageSize.p50">50</option>
+        </select>
     </div>
-}
+    <div class="card-body">
+        <QuickGrid TGridItem="UserResponse" @ref="grid" ItemsProvider="LoadUsers" Pagination="pagination">
+            <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Right" />
+            <PropertyColumn Title="Last name" Property="@(i => i.LastName)" Align="Align.Right" />
+            <TemplateColumn Title="Action">
+                <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <div class="card-footer"><Paginator State="@pagination" /></div>
+</div>
 
 @code {
-    private UserListResponse? userList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    IQueryable<UserResponse> UsersQueryable = Enumerable.Empty<UserResponse>().AsQueryable();
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
 
-    async Task GetData()
+    PageSize selectedPageSize = PageSize.p10;
+    PaginationState pagination = new() { ItemsPerPage = (int)PageSize.p10 };
+    QuickGrid<UserResponse> grid = default!;
+
+    protected override async Task OnParametersSetAsync()
     {
-        userList = await _userClient.Get();
-        UsersQueryable = userList.Users.AsQueryable();
+        Page = Math.Max(1, Page);
+
+        if (pagination.CurrentPageIndex != Page - 1)
+            await pagination.SetCurrentPageIndexAsync(Page - 1);
     }
 
-    protected override async Task OnInitializedAsync()
+    async ValueTask<GridItemsProviderResult<UserResponse>> LoadUsers(GridItemsProviderRequest<UserResponse> request)
     {
-        await GetData();
+        int page = (request.StartIndex / pagination.ItemsPerPage) + 1;
+
+        if (page != Page)
+            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", page), replace: true);
+
+        UserListResponse userList = await _userClient.Get(new UserGetRequest()
+        {
+            PageSize = selectedPageSize,
+            Page = page
+        });
+
+        return GridItemsProviderResult.From(userList.Users, userList.TotalCount);
     }
 
-    void SearchByName(ChangeEventArgs e)
+    async Task OnPageSizeChanged()
     {
-
+        pagination.ItemsPerPage = (int)selectedPageSize;
+        await pagination.SetCurrentPageIndexAsync(0);
     }
 
     void Edit(UserResponse user)
@@ -76,7 +87,7 @@ else
     async Task Delete(UserResponse user)
     {
         await _userClient.Delete(user.Id);
-        await GetData();
+        await grid.RefreshDataAsync();
     }
 
     private void AddClick()

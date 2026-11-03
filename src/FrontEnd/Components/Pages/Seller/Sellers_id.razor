@@ -1,5 +1,6 @@
 ﻿@page "/sellers/{IdString}"
 @using BillerContracts.Clients.Interfaces
+@using BillerContracts.Enums
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Seller
 @using BillerContracts.Requests.Item
@@ -107,7 +108,7 @@ else
         <button @onclick="AddCustomerClick">Add</button>
     </div>
 </div>
-@if (customerList == null)
+@if (seller == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -115,16 +116,16 @@ else
 {
     <div class="card">
         <div class="card-header">
+            <b>Page size:</b>
+            <select class="form-select" @bind="selectedPageSize" @bind:after="OnPageSizeChanged">
+                <option value="@PageSize.p10">10</option>
+                <option value="@PageSize.p25">25</option>
+                <option value="@PageSize.p50">50</option>
+            </select>
         </div>
         <div class="card-body">
-            <QuickGrid Items="@customersQueryable" Pagination="pagination">
-                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Customer name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
+            <QuickGrid TGridItem="CustomerResponse" @ref="grid" ItemsProvider="LoadCustomers" Pagination="pagination">
+                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Align="Align.Left" Class=" country-name" />
                 <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
                 <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
                 <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
@@ -153,9 +154,12 @@ else
     private PaginationState seriesPagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<SeriesResponse> seriesQueryable = Enumerable.Empty<SeriesResponse>().AsQueryable();
 
-    private CustomerListResponse? customerList;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    private IQueryable<CustomerResponse> customersQueryable = Enumerable.Empty<CustomerResponse>().AsQueryable();
+    [SupplyParameterFromQuery(Name = "page")]
+    public int Page { get; set; } = 1;
+
+    private PageSize selectedPageSize = PageSize.p10;
+    private PaginationState pagination = new() { ItemsPerPage = (int)PageSize.p10 };
+    private QuickGrid<CustomerResponse> grid = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,7 +169,15 @@ else
         }
 
         seller = await _sellerClient.Get(sellerId);
-        await Task.WhenAll(GetSeries(), GetCustomers());
+        await GetSeries();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Page = Math.Max(1, Page);
+
+        if (pagination.CurrentPageIndex != Page - 1)
+            await pagination.SetCurrentPageIndexAsync(Page - 1);
     }
 
     private void EditClick()
@@ -201,20 +213,27 @@ else
         await GetSeries();
     }
 
-    private async Task GetCustomers()
+    async ValueTask<GridItemsProviderResult<CustomerResponse>> LoadCustomers(GridItemsProviderRequest<CustomerResponse> request)
     {
-        CustomerGetRequest request = new()
-            {
-                SellerId = sellerId
-            };
+        int page = (request.StartIndex / pagination.ItemsPerPage) + 1;
 
-        customerList = await _customerClient.Get(request);
-        customersQueryable = customerList.Customers.AsQueryable();
+        if (page != Page)
+            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", page), replace: true);
+
+        CustomerListResponse customerList = await _customerClient.Get(new CustomerGetRequest()
+        {
+            SellerId = sellerId,
+            PageSize = selectedPageSize,
+            Page = page
+        });
+
+        return GridItemsProviderResult.From(customerList.Customers, customerList.TotalCount);
     }
 
-    void SearchByName(ChangeEventArgs e)
+    async Task OnPageSizeChanged()
     {
-
+        pagination.ItemsPerPage = (int)selectedPageSize;
+        await pagination.SetCurrentPageIndexAsync(0);
     }
 
     void EditCustomer(CustomerResponse customer)
@@ -225,7 +244,7 @@ else
     async Task DeleteCustomer(CustomerResponse customer)
     {
         await _customerClient.Delete(customer.Id);
-        await GetCustomers();
+        await grid.RefreshDataAsync();
     }
 
     private void AddCustomerClick()

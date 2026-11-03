@@ -1,15 +1,19 @@
 ﻿@page "/customers/{IdString}"
 @using BillerContracts.Clients.Interfaces
-@using BillerContracts.Requests.Customer
+@using BillerContracts.Enums
+@using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Customer
+@using BillerContracts.Responses.Invoice
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Components.Pages.Invoice
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
 @inject IItemClient _itemClient
+@inject IInvoiceClient _invoiceClient
 
 @attribute [StreamRendering]
 
@@ -69,7 +73,7 @@ else
         <button @onclick="AddItemClick">Add</button>
     </div>
 </div>
-@if (itemList == null)
+@if (customer == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -77,16 +81,16 @@ else
 {
     <div class="card">
         <div class="card-header">
+            <b>Page size:</b>
+            <select class="form-select" @bind="selectedItemPageSize" @bind:after="OnItemPageSizeChanged">
+                <option value="@PageSize.p10">10</option>
+                <option value="@PageSize.p25">25</option>
+                <option value="@PageSize.p50">50</option>
+            </select>
         </div>
         <div class="card-body">
-            <QuickGrid Items="@itemsQueryable" Pagination="pagination">
-                <PropertyColumn Title="Name" Property="@(i => i.Name)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Item name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
+            <QuickGrid TGridItem="ItemResponse" @ref="itemGrid" ItemsProvider="LoadItems" Pagination="itemPagination">
+                <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Left" Class=" country-name" />
                 <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
                 <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
                 <TemplateColumn Title="Action">
@@ -95,20 +99,66 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+        <div class="card-footer"><Paginator State="@itemPagination" /></div>
+    </div>
+}
+<br />
+<div style="display: flex; align-items: center;">
+    <h1>Invoices:</h1>
+</div>
+@if (customer == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <b>Page size:</b>
+            <select class="form-select" @bind="selectedInvoicePageSize" @bind:after="OnInvoicePageSizeChanged">
+                <option value="@PageSize.p10">10</option>
+                <option value="@PageSize.p25">25</option>
+                <option value="@PageSize.p50">50</option>
+            </select>
+        </div>
+        <div class="card-body">
+            <QuickGrid TGridItem="InvoiceResponse" ItemsProvider="LoadInvoices" Pagination="invoicePagination">
+                <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
+                <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Format="D6" Align="Align.Right" />
+                <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
+                <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" />
+                <TemplateColumn Title="Status">
+                    <InvoiceStatusLabel Status="@context.Status" />
+                </TemplateColumn>
+                <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => OpenInvoice(context))" class="btn btn-info">Edit</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@invoicePagination" /></div>
     </div>
 }
 
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
-    
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int ItemPage { get; set; } = 1;
+
+    [SupplyParameterFromQuery(Name = "invoicePage")]
+    public int InvoicePage { get; set; } = 1;
+
     private Guid customerId;
     private CustomerResponse? customer;
 
-    private ItemListResponse? itemList;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    private IQueryable<ItemResponse> itemsQueryable = Enumerable.Empty<ItemResponse>().AsQueryable();
+    private PageSize selectedItemPageSize = PageSize.p10;
+    private PaginationState itemPagination = new() { ItemsPerPage = (int)PageSize.p10 };
+    private QuickGrid<ItemResponse> itemGrid = default!;
+
+    private PageSize selectedInvoicePageSize = PageSize.p10;
+    private PaginationState invoicePagination = new() { ItemsPerPage = (int)PageSize.p10 };
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,7 +168,18 @@ else
         }
 
         customer = await _customerClient.Get(customerId);
-        await GetItems();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ItemPage = Math.Max(1, ItemPage);
+        InvoicePage = Math.Max(1, InvoicePage);
+
+        if (itemPagination.CurrentPageIndex != ItemPage - 1)
+            await itemPagination.SetCurrentPageIndexAsync(ItemPage - 1);
+
+        if (invoicePagination.CurrentPageIndex != InvoicePage - 1)
+            await invoicePagination.SetCurrentPageIndexAsync(InvoicePage - 1);
     }
 
     private void EditClick()
@@ -132,20 +193,55 @@ else
         _navigationManager.NavigateTo("/customers", false);
     }
 
-    private async Task GetItems()
+    async ValueTask<GridItemsProviderResult<ItemResponse>> LoadItems(GridItemsProviderRequest<ItemResponse> request)
     {
-        ItemGetRequest request = new()
-            {
-                CustomerId = customerId
-            };
+        int page = (request.StartIndex / itemPagination.ItemsPerPage) + 1;
 
-        itemList = await _itemClient.Get(request);
-        itemsQueryable = itemList.Items.AsQueryable();
+        if (page != ItemPage)
+            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", page), replace: true);
+
+        ItemListResponse itemList = await _itemClient.Get(new ItemGetRequest()
+        {
+            CustomerId = customerId,
+            PageSize = selectedItemPageSize,
+            Page = page
+        });
+
+        return GridItemsProviderResult.From(itemList.Items, itemList.TotalCount);
     }
 
-    void SearchByName(ChangeEventArgs e)
+    async Task OnItemPageSizeChanged()
     {
+        itemPagination.ItemsPerPage = (int)selectedItemPageSize;
+        await itemPagination.SetCurrentPageIndexAsync(0);
+    }
 
+    async ValueTask<GridItemsProviderResult<InvoiceResponse>> LoadInvoices(GridItemsProviderRequest<InvoiceResponse> request)
+    {
+        int page = (request.StartIndex / invoicePagination.ItemsPerPage) + 1;
+
+        if (page != InvoicePage)
+            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("invoicePage", page), replace: true);
+
+        InvoiceListResponse invoiceList = await _invoiceClient.Get(new InvoiceGetRequest()
+        {
+            CustomerId = customerId,
+            PageSize = selectedInvoicePageSize,
+            Page = page
+        });
+
+        return GridItemsProviderResult.From(invoiceList.Invoices, invoiceList.TotalCount);
+    }
+
+    async Task OnInvoicePageSizeChanged()
+    {
+        invoicePagination.ItemsPerPage = (int)selectedInvoicePageSize;
+        await invoicePagination.SetCurrentPageIndexAsync(0);
+    }
+
+    void OpenInvoice(InvoiceResponse invoice)
+    {
+        _navigationManager.NavigateTo($"/invoices/{invoice.Id}", false);
     }
 
     void EditItem(ItemResponse item)
@@ -156,7 +252,7 @@ else
     async Task DeleteItem(ItemResponse item)
     {
         await _itemClient.Delete(item.Id);
-        await GetItems();
+        await itemGrid.RefreshDataAsync();
     }
 
     private void AddItemClick()
