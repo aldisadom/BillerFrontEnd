@@ -1,8 +1,8 @@
 ﻿@page "/customers"
-@using BillerContracts.Enums
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Clients.Interfaces
+@using FrontEnd.Capabilities
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ICustomerClient _customerClient
@@ -17,15 +17,10 @@
 
 <div class="card">
     <div class="card-header">
-        <b>Page size:</b>
-        <select class="form-select" @bind="selectedPageSize" @bind:after="OnPageSizeChanged">
-            <option value="@PageSize.p10">10</option>
-            <option value="@PageSize.p25">25</option>
-            <option value="@PageSize.p50">50</option>
-        </select>
+        <PageSizeSelect Paging="paging" />
     </div>
     <div class="card-body">
-        <QuickGrid TGridItem="CustomerResponse" @ref="grid" ItemsProvider="LoadCustomers" Pagination="pagination">
+        <QuickGrid TGridItem="CustomerResponse" @ref="grid" ItemsProvider="LoadCustomers" Pagination="paging.Pagination">
             <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Align="Align.Left" Class=" country-name" />
             <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
             <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
@@ -41,45 +36,48 @@
             </TemplateColumn>
         </QuickGrid>
     </div>
-    <div class="card-footer"><Paginator State="@pagination" /></div>
+    <div class="card-footer"><Paginator State="@paging.Pagination" /></div>
 </div>
 
 @code {
     [SupplyParameterFromQuery(Name = "page")]
-    public int Page { get; set; } = 1;
+    public int? QueryPage { get; set; }
 
-    PageSize selectedPageSize = PageSize.p10;
-    PaginationState pagination = new() { ItemsPerPage = (int)PageSize.p10 };
+    [SupplyParameterFromQuery(Name = "pageSize")]
+    public int? QueryPageSize { get; set; }
+
+    readonly GridPaging paging = new();
+    PagedGridsUrl url = default!;
     QuickGrid<CustomerResponse> grid = default!;
+
+    protected override void OnInitialized()
+    {
+        url = new(_navigationManager, paging);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
-        Page = Math.Max(1, Page);
+        if (url.UrlChanged())
+            await paging.Apply(QueryPage, QueryPageSize);
+    }
 
-        if (pagination.CurrentPageIndex != Page - 1)
-            await pagination.SetCurrentPageIndexAsync(Page - 1);
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            url.Rendered();
     }
 
     async ValueTask<GridItemsProviderResult<CustomerResponse>> LoadCustomers(GridItemsProviderRequest<CustomerResponse> request)
     {
-        int page = (request.StartIndex / pagination.ItemsPerPage) + 1;
-
-        if (page != Page)
-            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", page), replace: true);
+        url.Write();
 
         CustomerListResponse customerList = await _customerClient.Get(new CustomerGetRequest()
         {
-            PageSize = selectedPageSize,
-            Page = page
+            PageSize = paging.PageSize,
+            Page = paging.Page
         });
 
         return GridItemsProviderResult.From(customerList.Customers, customerList.TotalCount);
-    }
-
-    async Task OnPageSizeChanged()
-    {
-        pagination.ItemsPerPage = (int)selectedPageSize;
-        await pagination.SetCurrentPageIndexAsync(0);
     }
 
     void Edit(CustomerResponse customer)

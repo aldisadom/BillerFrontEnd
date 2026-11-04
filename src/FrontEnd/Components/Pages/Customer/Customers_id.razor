@@ -1,12 +1,12 @@
 ﻿@page "/customers/{IdString}"
 @using BillerContracts.Clients.Interfaces
-@using BillerContracts.Enums
 @using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Invoice
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Capabilities
 @using FrontEnd.Components.Pages.Invoice
 @using Microsoft.AspNetCore.Components.QuickGrid
 
@@ -81,15 +81,10 @@ else
 {
     <div class="card">
         <div class="card-header">
-            <b>Page size:</b>
-            <select class="form-select" @bind="selectedItemPageSize" @bind:after="OnItemPageSizeChanged">
-                <option value="@PageSize.p10">10</option>
-                <option value="@PageSize.p25">25</option>
-                <option value="@PageSize.p50">50</option>
-            </select>
+            <PageSizeSelect Paging="itemPaging" />
         </div>
         <div class="card-body">
-            <QuickGrid TGridItem="ItemResponse" @ref="itemGrid" ItemsProvider="LoadItems" Pagination="itemPagination">
+            <QuickGrid TGridItem="ItemResponse" @ref="itemGrid" ItemsProvider="LoadItems" Pagination="itemPaging.Pagination">
                 <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Left" Class=" country-name" />
                 <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
                 <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
@@ -99,7 +94,7 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@itemPagination" /></div>
+        <div class="card-footer"><Paginator State="@itemPaging.Pagination" /></div>
     </div>
 }
 <br />
@@ -114,15 +109,10 @@ else
 {
     <div class="card">
         <div class="card-header">
-            <b>Page size:</b>
-            <select class="form-select" @bind="selectedInvoicePageSize" @bind:after="OnInvoicePageSizeChanged">
-                <option value="@PageSize.p10">10</option>
-                <option value="@PageSize.p25">25</option>
-                <option value="@PageSize.p50">50</option>
-            </select>
+            <PageSizeSelect Paging="invoicePaging" />
         </div>
         <div class="card-body">
-            <QuickGrid TGridItem="InvoiceResponse" ItemsProvider="LoadInvoices" Pagination="invoicePagination">
+            <QuickGrid TGridItem="InvoiceResponse" ItemsProvider="LoadInvoices" Pagination="invoicePaging.Pagination">
                 <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
                 <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Format="D6" Align="Align.Right" />
                 <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
@@ -136,7 +126,7 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@invoicePagination" /></div>
+        <div class="card-footer"><Paginator State="@invoicePaging.Pagination" /></div>
     </div>
 }
 
@@ -145,20 +135,24 @@ else
     public string IdString { get; set; } = string.Empty;
 
     [SupplyParameterFromQuery(Name = "page")]
-    public int ItemPage { get; set; } = 1;
+    public int? QueryItemPage { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pageSize")]
+    public int? QueryItemPageSize { get; set; }
 
     [SupplyParameterFromQuery(Name = "invoicePage")]
-    public int InvoicePage { get; set; } = 1;
+    public int? QueryInvoicePage { get; set; }
+
+    [SupplyParameterFromQuery(Name = "invoicePageSize")]
+    public int? QueryInvoicePageSize { get; set; }
 
     private Guid customerId;
     private CustomerResponse? customer;
 
-    private PageSize selectedItemPageSize = PageSize.p10;
-    private PaginationState itemPagination = new() { ItemsPerPage = (int)PageSize.p10 };
+    private readonly GridPaging itemPaging = new();
+    private readonly GridPaging invoicePaging = new("invoicePage", "invoicePageSize");
+    private PagedGridsUrl url = default!;
     private QuickGrid<ItemResponse> itemGrid = default!;
-
-    private PageSize selectedInvoicePageSize = PageSize.p10;
-    private PaginationState invoicePagination = new() { ItemsPerPage = (int)PageSize.p10 };
 
     protected override async Task OnInitializedAsync()
     {
@@ -167,19 +161,23 @@ else
             throw new NotFoundException("Invalid id format");
         }
 
+        url = new(_navigationManager, itemPaging, invoicePaging);
         customer = await _customerClient.Get(customerId);
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        ItemPage = Math.Max(1, ItemPage);
-        InvoicePage = Math.Max(1, InvoicePage);
+        if (!url.UrlChanged())
+            return;
 
-        if (itemPagination.CurrentPageIndex != ItemPage - 1)
-            await itemPagination.SetCurrentPageIndexAsync(ItemPage - 1);
+        await itemPaging.Apply(QueryItemPage, QueryItemPageSize);
+        await invoicePaging.Apply(QueryInvoicePage, QueryInvoicePageSize);
+    }
 
-        if (invoicePagination.CurrentPageIndex != InvoicePage - 1)
-            await invoicePagination.SetCurrentPageIndexAsync(InvoicePage - 1);
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            url.Rendered();
     }
 
     private void EditClick()
@@ -195,48 +193,30 @@ else
 
     async ValueTask<GridItemsProviderResult<ItemResponse>> LoadItems(GridItemsProviderRequest<ItemResponse> request)
     {
-        int page = (request.StartIndex / itemPagination.ItemsPerPage) + 1;
-
-        if (page != ItemPage)
-            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("page", page), replace: true);
+        url.Write();
 
         ItemListResponse itemList = await _itemClient.Get(new ItemGetRequest()
         {
             CustomerId = customerId,
-            PageSize = selectedItemPageSize,
-            Page = page
+            PageSize = itemPaging.PageSize,
+            Page = itemPaging.Page
         });
 
         return GridItemsProviderResult.From(itemList.Items, itemList.TotalCount);
     }
 
-    async Task OnItemPageSizeChanged()
-    {
-        itemPagination.ItemsPerPage = (int)selectedItemPageSize;
-        await itemPagination.SetCurrentPageIndexAsync(0);
-    }
-
     async ValueTask<GridItemsProviderResult<InvoiceResponse>> LoadInvoices(GridItemsProviderRequest<InvoiceResponse> request)
     {
-        int page = (request.StartIndex / invoicePagination.ItemsPerPage) + 1;
-
-        if (page != InvoicePage)
-            _navigationManager.NavigateTo(_navigationManager.GetUriWithQueryParameter("invoicePage", page), replace: true);
+        url.Write();
 
         InvoiceListResponse invoiceList = await _invoiceClient.Get(new InvoiceGetRequest()
         {
             CustomerId = customerId,
-            PageSize = selectedInvoicePageSize,
-            Page = page
+            PageSize = invoicePaging.PageSize,
+            Page = invoicePaging.Page
         });
 
         return GridItemsProviderResult.From(invoiceList.Invoices, invoiceList.TotalCount);
-    }
-
-    async Task OnInvoicePageSizeChanged()
-    {
-        invoicePagination.ItemsPerPage = (int)selectedInvoicePageSize;
-        await invoicePagination.SetCurrentPageIndexAsync(0);
     }
 
     void OpenInvoice(InvoiceResponse invoice)

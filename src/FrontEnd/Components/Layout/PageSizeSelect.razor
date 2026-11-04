@@ -1,0 +1,14 @@
+@using FrontEnd.Capabilities
+
+<b>Page size:</b>
+<select class="form-select" @bind="Paging.PageSize" @bind:after="Paging.PageSizeChanged">
+    @foreach (var size in GridPaging.PageSizes)
+    {
+        <option value="@size">@((int)size)</option>
+    }
+</select>
+
+@code {
+    [Parameter, EditorRequired]
+    public GridPaging Paging { get; set; } = default!;
+}
