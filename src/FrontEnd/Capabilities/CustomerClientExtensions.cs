@@ -14,7 +14,12 @@ internal static class CustomerClientExtensions
         CustomerListResponse response;
         do
         {
-            response = await client.Get(new CustomerGetRequest { SellerId = sellerId, Page = page++, PageSize = PageSize.p50 });
+            response = await client.Get(new CustomerGetRequest { SellerId = sellerId, Page = page, PageSize = PageSize.p50 });
+
+            // A page past the last one comes back as the last page, whose rows are already in the list
+            if (response.Page != page++)
+                break;
+
             customers.AddRange(response.Customers);
         }
         while (response.Customers.Count > 0 && customers.Count < response.TotalCount);

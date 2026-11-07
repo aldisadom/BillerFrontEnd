@@ -14,7 +14,12 @@ internal static class ItemClientExtensions
         ItemListResponse response;
         do
         {
-            response = await client.Get(new ItemGetRequest { CustomerId = customerId, Page = page++, PageSize = PageSize.p50 });
+            response = await client.Get(new ItemGetRequest { CustomerId = customerId, Page = page, PageSize = PageSize.p50 });
+
+            // A page past the last one comes back as the last page, whose rows are already in the list
+            if (response.Page != page++)
+                break;
+
             items.AddRange(response.Items);
         }
         while (response.Items.Count > 0 && items.Count < response.TotalCount);

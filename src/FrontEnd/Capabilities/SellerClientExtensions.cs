@@ -14,7 +14,12 @@ internal static class SellerClientExtensions
         SellerListResponse response;
         do
         {
-            response = await client.Get(new SellerGetRequest { UserId = userId, Page = page++, PageSize = PageSize.p50 });
+            response = await client.Get(new SellerGetRequest { UserId = userId, Page = page, PageSize = PageSize.p50 });
+
+            // A page past the last one comes back as the last page, whose rows are already in the list
+            if (response.Page != page++)
+                break;
+
             sellers.AddRange(response.Sellers);
         }
         while (response.Sellers.Count > 0 && sellers.Count < response.TotalCount);

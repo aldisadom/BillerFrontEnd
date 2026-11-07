@@ -14,7 +14,12 @@ internal static class SeriesClientExtensions
         SeriesListResponse response;
         do
         {
-            response = await client.Get(new SeriesGetRequest { SellerId = sellerId, Page = page++, PageSize = PageSize.p50 });
+            response = await client.Get(new SeriesGetRequest { SellerId = sellerId, Page = page, PageSize = PageSize.p50 });
+
+            // A page past the last one comes back as the last page, whose rows are already in the list
+            if (response.Page != page++)
+                break;
+
             series.AddRange(response.Series);
         }
         while (response.Series.Count > 0 && series.Count < response.TotalCount);
