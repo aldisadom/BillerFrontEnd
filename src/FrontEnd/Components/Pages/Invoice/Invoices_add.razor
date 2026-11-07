@@ -1,8 +1,5 @@
 ﻿@page "/invoices/add"
-@using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Invoice
-@using BillerContracts.Requests.Item
-@using BillerContracts.Requests.Seller
 @using BillerContracts.Responses
 @using BillerContracts.Responses.Customer
 @using BillerContracts.Responses.Item
@@ -11,6 +8,7 @@
 @using BillerContracts.Clients.Interfaces
 @using Microsoft.Fast.Components.FluentUI
 @using Domain.Models
+@using FrontEnd.Capabilities
 
 @inject NavigationManager _navigationManager
 @inject IInvoiceClient _invoiceClient
@@ -107,7 +105,7 @@
                     @if (itemFilters[index].IsValid())
                     {
                         Guid id = itemFilters[index].SelectedId;
-                        ItemResponse item = itemsList!.Items.Find(i => i.Id == id)!;
+                        ItemResponse item = itemsList!.Find(i => i.Id == id)!;
                         <td>
                             <input type="text" @bind="invoice.Items[index].Comments" />
                         </td>
@@ -131,9 +129,9 @@
 @code {
     private InvoiceAddRequest invoice = new();
     private UserResponse? user;
-    private SellerListResponse? sellersList;
-    private CustomerListResponse? customersList;
-    private ItemListResponse? itemsList;
+    private List<SellerResponse>? sellersList;
+    private List<CustomerResponse>? customersList;
+    private List<ItemResponse>? itemsList;
 
     private AppFilter sellerFilter { get; set; } = new(false);
     private AppFilter customerFilter { get; set; } = new(false);
@@ -152,11 +150,10 @@
 
         invoice.SellerId = sellerFilter.SelectedId;
 
-        CustomerGetRequest customerGetRequest = new() { SellerId = invoice.SellerId };
-        customersList = await _customerClient.Get(customerGetRequest);
+        customersList = await _customerClient.GetAllForSeller(invoice.SellerId);
 
         customerFilter = new AppFilter(false);
-        foreach (var customer in customersList.Customers)
+        foreach (var customer in customersList)
             customerFilter.SelectionList.Add(customer.Id, customer.CompanyName);
 
         customerFilter.SelectFirstFromList();
@@ -170,15 +167,14 @@
 
         invoice.CustomerId = customerFilter.SelectedId;
 
-        ItemGetRequest itemGetRequest = new() { CustomerId = invoice.CustomerId};
-        itemsList = await _itemClient.Get(itemGetRequest);
+        itemsList = await _itemClient.GetAllForCustomer(invoice.CustomerId);
 
         itemFilters.Clear();
         invoice.Items.Clear();
 
         itemFilters.Add(new AppFilter());
 
-        foreach (var item in itemsList.Items)
+        foreach (var item in itemsList)
             itemFilters[0].SelectionList.Add(item.Id, $"{item.Name} ({item.Price})");
     }
 
@@ -201,7 +197,7 @@
         invoice.Items[index].Id = itemFilters[index].SelectedId;
 
         itemFilters.Add(new AppFilter());        
-        foreach (var item in itemsList!.Items)
+        foreach (var item in itemsList!)
             itemFilters[itemFilters.Count-1].SelectionList.Add(item.Id, item.Name);
 
     }
@@ -231,31 +227,29 @@
         invoice.DueDate = invoice.CreatedDate.AddDays(7);
 
         user = await _userClient.Get(invoice.UserId);
-        SellerGetRequest sellerGetRequest = new() { UserId = invoice.UserId };
-        sellersList = await _sellerClient.Get(sellerGetRequest);
+        sellersList = await _sellerClient.GetAllForUser(invoice.UserId);
 
-        if (sellersList.Sellers.Count == 0)
+        if (sellersList.Count == 0)
             return;
 
-        foreach (var seller in sellersList.Sellers)
+        foreach (var seller in sellersList)
             sellerFilter.SelectionList.TryAdd(seller.Id, seller.CompanyName);
 
         if (invoice.SellerId == default)
-            invoice.SellerId = sellersList.Sellers[0].Id;
+            invoice.SellerId = sellersList[0].Id;
 
         sellerFilter.UpdateSelected(invoice.SellerId);
 
-        CustomerGetRequest customerGetRequest = new() { SellerId = invoice.SellerId};
-        customersList = await _customerClient.Get(customerGetRequest);
+        customersList = await _customerClient.GetAllForSeller(invoice.SellerId);
 
-        if (customersList.Customers.Count == 0)
+        if (customersList.Count == 0)
             return;
 
-        foreach (var customer in customersList.Customers)
+        foreach (var customer in customersList)
             customerFilter.SelectionList.TryAdd(customer.Id, customer.CompanyName);
 
         if (invoice.CustomerId == default)
-            invoice.CustomerId = customersList.Customers[0].Id;
+            invoice.CustomerId = customersList[0].Id;
 
         customerFilter.UpdateSelected(invoice.CustomerId);
         await CustomerChange();

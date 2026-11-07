@@ -1,15 +1,19 @@
 ﻿@page "/customers/{IdString}"
 @using BillerContracts.Clients.Interfaces
-@using BillerContracts.Requests.Customer
+@using BillerContracts.Requests.Invoice
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Customer
+@using BillerContracts.Responses.Invoice
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.Capabilities
+@using FrontEnd.Components.Pages.Invoice
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject NavigationManager _navigationManager
 @inject ICustomerClient _customerClient
 @inject IItemClient _itemClient
+@inject IInvoiceClient _invoiceClient
 
 @attribute [StreamRendering]
 
@@ -69,7 +73,7 @@ else
         <button @onclick="AddItemClick">Add</button>
     </div>
 </div>
-@if (itemList == null)
+@if (customer == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -77,16 +81,11 @@ else
 {
     <div class="card">
         <div class="card-header">
+            <PageSizeSelect Paging="itemPaging" />
         </div>
         <div class="card-body">
-            <QuickGrid Items="@itemsQueryable" Pagination="pagination">
-                <PropertyColumn Title="Name" Property="@(i => i.Name)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Item name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
+            <QuickGrid TGridItem="ItemResponse" @ref="itemGrid" ItemsProvider="LoadItems" Pagination="itemPaging.Pagination">
+                <PropertyColumn Title="Name" Property="@(i => i.Name)" Align="Align.Left" Class=" country-name" />
                 <PropertyColumn Title="Price" Property="@(i => i.Price)" Align="Align.Right" />
                 <PropertyColumn Title="Quantity" Property="@(i => i.Quantity)" Align="Align.Right" />
                 <TemplateColumn Title="Action">
@@ -95,20 +94,65 @@ else
                 </TemplateColumn>
             </QuickGrid>
         </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+        <div class="card-footer"><Paginator State="@itemPaging.Pagination" /></div>
+    </div>
+}
+<br />
+<div style="display: flex; align-items: center;">
+    <h1>Invoices:</h1>
+</div>
+@if (customer == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-header">
+            <PageSizeSelect Paging="invoicePaging" />
+        </div>
+        <div class="card-body">
+            <QuickGrid TGridItem="InvoiceResponse" ItemsProvider="LoadInvoices" Pagination="invoicePaging.Pagination">
+                <PropertyColumn Title="Series" Property="@(i => i.SeriesName)" Align="Align.Right" />
+                <PropertyColumn Title="Invoice number" Property="@(i => i.InvoiceNumber)" Format="D6" Align="Align.Right" />
+                <PropertyColumn Title="Date created" Property="@(p => p.CreatedDate)" Format="yyyy-MM-dd" />
+                <PropertyColumn Title="Due date" Property="@(p => p.DueDate)" Format="yyyy-MM-dd" />
+                <TemplateColumn Title="Status">
+                    <InvoiceStatusLabel Status="@context.Status" />
+                </TemplateColumn>
+                <PropertyColumn Title="Total price" Property="@(i => i.TotalPrice)" Align="Align.Right" />
+                <TemplateColumn Title="Action">
+                    <button @onclick="@(() => OpenInvoice(context))" class="btn btn-info">Edit</button>
+                </TemplateColumn>
+            </QuickGrid>
+        </div>
+        <div class="card-footer"><Paginator State="@invoicePaging.Pagination" /></div>
     </div>
 }
 
 @code {
     [Parameter]
     public string IdString { get; set; } = string.Empty;
-    
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? QueryItemPage { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pageSize")]
+    public int? QueryItemPageSize { get; set; }
+
+    [SupplyParameterFromQuery(Name = "invoicePage")]
+    public int? QueryInvoicePage { get; set; }
+
+    [SupplyParameterFromQuery(Name = "invoicePageSize")]
+    public int? QueryInvoicePageSize { get; set; }
+
     private Guid customerId;
     private CustomerResponse? customer;
 
-    private ItemListResponse? itemList;
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    private IQueryable<ItemResponse> itemsQueryable = Enumerable.Empty<ItemResponse>().AsQueryable();
+    private readonly GridPaging itemPaging = new();
+    private readonly GridPaging invoicePaging = new("invoicePage", "invoicePageSize");
+    private PagedGridsUrl url = default!;
+    private QuickGrid<ItemResponse> itemGrid = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,8 +161,23 @@ else
             throw new NotFoundException("Invalid id format");
         }
 
+        url = new(_navigationManager, itemPaging, invoicePaging);
         customer = await _customerClient.Get(customerId);
-        await GetItems();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!url.UrlChanged())
+            return;
+
+        await itemPaging.Apply(QueryItemPage, QueryItemPageSize);
+        await invoicePaging.Apply(QueryInvoicePage, QueryInvoicePageSize);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+            url.Rendered();
     }
 
     private void EditClick()
@@ -132,20 +191,37 @@ else
         _navigationManager.NavigateTo("/customers", false);
     }
 
-    private async Task GetItems()
+    async ValueTask<GridItemsProviderResult<ItemResponse>> LoadItems(GridItemsProviderRequest<ItemResponse> request)
     {
-        ItemGetRequest request = new()
-            {
-                CustomerId = customerId
-            };
+        url.Write();
 
-        itemList = await _itemClient.Get(request);
-        itemsQueryable = itemList.Items.AsQueryable();
+        ItemListResponse itemList = await _itemClient.Get(new ItemGetRequest()
+        {
+            CustomerId = customerId,
+            PageSize = itemPaging.PageSize,
+            Page = itemPaging.Page
+        });
+
+        return GridItemsProviderResult.From(itemList.Items, itemList.TotalCount);
     }
 
-    void SearchByName(ChangeEventArgs e)
+    async ValueTask<GridItemsProviderResult<InvoiceResponse>> LoadInvoices(GridItemsProviderRequest<InvoiceResponse> request)
     {
+        url.Write();
 
+        InvoiceListResponse invoiceList = await _invoiceClient.Get(new InvoiceGetRequest()
+        {
+            CustomerId = customerId,
+            PageSize = invoicePaging.PageSize,
+            Page = invoicePaging.Page
+        });
+
+        return GridItemsProviderResult.From(invoiceList.Invoices, invoiceList.TotalCount);
+    }
+
+    void OpenInvoice(InvoiceResponse invoice)
+    {
+        _navigationManager.NavigateTo($"/invoices/{invoice.Id}", false);
     }
 
     void EditItem(ItemResponse item)
@@ -156,7 +232,7 @@ else
     async Task DeleteItem(ItemResponse item)
     {
         await _itemClient.Delete(item.Id);
-        await GetItems();
+        await itemGrid.RefreshDataAsync();
     }
 
     private void AddItemClick()

@@ -1,6 +1,8 @@
 ﻿@page "/sellers"
 @using BillerContracts.Clients.Interfaces
+@using BillerContracts.Requests.Seller
 @using BillerContracts.Responses.Seller
+@using FrontEnd.Capabilities
 @using Microsoft.AspNetCore.Components.QuickGrid
 
 @inject ISellerClient _sellerClient
@@ -13,63 +15,69 @@
     <h1>Sellers</h1>
 </div>
 
-@if (sellerList == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div class="card">
-        <div class="card-header">
-                        
-        </div>
-        <div class="card-body">
-            <QuickGrid Items="@SellersQueryable" Pagination="pagination">                            
-                <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Sortable="true" Align="Align.Left" Class=" country-name">
-                    <ColumnOptions>
-                        <div class="search-box">
-                            <input type="search" autofocus @onchange="SearchByName" placeholder="Seller name..." />
-                        </div>
-                    </ColumnOptions>
-                </PropertyColumn>
-                <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
-                <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
-                <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
-                <PropertyColumn Title="State" Property="@(i => i.State)" Sortable="true" Align="Align.Right" />
-                <PropertyColumn Title="City" Property="@(i => i.City)" Sortable="true" Align="Align.Right" />
-                <PropertyColumn Title="Street" Property="@(i => i.Street)" Align="Align.Right" />
-                <PropertyColumn Title="Bank Name" Property="@(i => i.BankName)" Align="Align.Right" />
-                <PropertyColumn Title="Bank number" Property="@(i => i.BankNumber)" Align="Align.Right" />
-                <!--   <PropertyColumn Property="@(p => p.da)" Format="yyyy-MM-dd" Sortable="true" /> -->
-                <TemplateColumn Title="Action">
-                    <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
-                    <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
-                </TemplateColumn>
-            </QuickGrid>
-        </div>
-        <div class="card-footer"><Paginator State="@pagination" /></div>
+<div class="card">
+    <div class="card-header">
+        <PageSizeSelect Paging="paging" />
     </div>
-}
+    <div class="card-body">
+        <QuickGrid TGridItem="SellerResponse" @ref="grid" ItemsProvider="LoadSellers" Pagination="paging.Pagination">
+            <PropertyColumn Title="Name" Property="@(i => i.CompanyName)" Align="Align.Left" Class=" country-name" />
+            <PropertyColumn Title="Company number" Property="@(i => i.CompanyNumber)" Align="Align.Right" />
+            <PropertyColumn Title="Email" Property="@(i => i.Email)" Align="Align.Right" />
+            <PropertyColumn Title="Phone" Property="@(i => i.Phone)" Align="Align.Right" />
+            <PropertyColumn Title="State" Property="@(i => i.State)" Align="Align.Right" />
+            <PropertyColumn Title="City" Property="@(i => i.City)" Align="Align.Right" />
+            <PropertyColumn Title="Street" Property="@(i => i.Street)" Align="Align.Right" />
+            <PropertyColumn Title="Bank Name" Property="@(i => i.BankName)" Align="Align.Right" />
+            <PropertyColumn Title="Bank number" Property="@(i => i.BankNumber)" Align="Align.Right" />
+            <TemplateColumn Title="Action">
+                <button @onclick="@(() => Edit(context))" class="btn btn-info">Edit</button>
+                <button @onclick="@(() => Delete(context))" class="btn btn-danger">Delete</button>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <div class="card-footer"><Paginator State="@paging.Pagination" /></div>
+</div>
 
 @code {
-    private SellerListResponse? sellerList;
-    PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
-    IQueryable<SellerResponse> SellersQueryable = Enumerable.Empty<SellerResponse>().AsQueryable();
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? QueryPage { get; set; }
 
-    async Task GetData()
+    [SupplyParameterFromQuery(Name = "pageSize")]
+    public int? QueryPageSize { get; set; }
+
+    readonly GridPaging paging = new();
+    PagedGridsUrl url = default!;
+    QuickGrid<SellerResponse> grid = default!;
+
+    protected override void OnInitialized()
     {
-        sellerList = await _sellerClient.Get();
-        SellersQueryable = sellerList.Sellers.AsQueryable();
+        url = new(_navigationManager, paging);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        await GetData();
-    }    
+        if (url.UrlChanged())
+            await paging.Apply(QueryPage, QueryPageSize);
+    }
 
-    void SearchByName(ChangeEventArgs e)
+    protected override void OnAfterRender(bool firstRender)
     {
-       
+        if (firstRender)
+            url.Rendered();
+    }
+
+    async ValueTask<GridItemsProviderResult<SellerResponse>> LoadSellers(GridItemsProviderRequest<SellerResponse> request)
+    {
+        url.Write();
+
+        SellerListResponse sellerList = await _sellerClient.Get(new SellerGetRequest()
+        {
+            PageSize = paging.PageSize,
+            Page = paging.Page
+        });
+
+        return GridItemsProviderResult.From(sellerList.Sellers, sellerList.TotalCount);
     }
 
     void Edit(SellerResponse seller)
@@ -80,6 +88,6 @@ else
     async Task Delete(SellerResponse seller)
     {
         await _sellerClient.Delete(seller.Id);
-        await GetData();
+        await grid.RefreshDataAsync();
     }
 }

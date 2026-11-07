@@ -16,8 +16,13 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 
 ## Where things go
 - Pages: `src/FrontEnd/Components/Pages/<Resource>/`, named `<Resource>s.razor` (list), `<Resource>s_add`,
-  `<Resource>s_id`, `<Resource>s_update`, plus filters such as `Items_customerId.razor`.
+  `<Resource>s_id`, `<Resource>s_update`. A list of a parent's rows goes on the parent's `_id` page.
 - Layout: `src/FrontEnd/Components/Layout/`.
+- Server-paged grids: a `GridPaging` (`Capabilities/`) per grid with `PageSizeSelect`, and one
+  `PagedGridsUrl` per page that keeps every grid's page and page size in the URL, as in `Invoices.razor`:
+  `[SupplyParameterFromQuery]` properties (without them a query-only change doesn't reach the page),
+  `GridPaging.Apply` in `OnParametersSetAsync` when `UrlChanged()`, `Rendered` after the first render,
+  `Write` in each `ItemsProvider`.
 
 ## Conventions
 - Call the API only through the clients; don't build URLs in pages.
