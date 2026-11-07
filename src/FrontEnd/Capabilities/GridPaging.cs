@@ -11,7 +11,8 @@ public sealed class GridPaging
 {
     public static readonly PageSize[] PageSizes = [PageSize.p10, PageSize.p25, PageSize.p50];
 
-    // Biller's PagedRequestValidator allows pages up to int.MaxValue / 50
+    // QuickGrid works out CurrentPageIndex * ItemsPerPage as an int, so a page index above this
+    // overflows at the largest page size before the paginator moves to the last page
     private const int MaxPage = int.MaxValue / 50;
 
     public GridPaging(string pageKey = "page", string pageSizeKey = "pageSize")
@@ -28,7 +29,8 @@ public sealed class GridPaging
 
     /// <summary>
     /// Moves the grid to the page and page size from the URL. A missing or unknown page size is 10,
-    /// a missing page is 1.
+    /// a missing page or one below 1 is 1. Biller answers a page past the last one with the last page, and
+    /// the paginator then moves there.
     /// </summary>
     public async Task Apply(int? page, int? pageSize)
     {
