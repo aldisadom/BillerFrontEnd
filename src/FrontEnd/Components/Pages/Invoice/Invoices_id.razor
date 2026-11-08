@@ -11,6 +11,7 @@
 @inject ICustomerClient _customerClient
 @inject ISellerClient _sellerClient
 @inject IItemClient _itemClient
+@inject IJSRuntime _jsRuntime
 
 @attribute [StreamRendering]
 
@@ -29,10 +30,23 @@ else
             <button @onclick="EditClick">Edit</button>
         </div>
         <div style="margin-left: 20px;">
-            <button @onclick="() => GeneratePdfClick(DocumentType.Invoice)">Generate invoice</button>
+            <select class="form-select" @bind="documentType">
+                @foreach (DocumentType type in Enum.GetValues<DocumentType>())
+                {
+                    <option value="@type">@DocumentTypeName(type)</option>
+                }
+            </select>
         </div>
         <div style="margin-left: 20px;">
-            <button @onclick="() => GeneratePdfClick(DocumentType.JobDoneAct)">Generate job done act</button>
+            <select class="form-select" @bind="documentLanguage">
+                @foreach (Language language in Enum.GetValues<Language>())
+                {
+                    <option value="@language">@language</option>
+                }
+            </select>
+        </div>
+        <div style="margin-left: 20px;">
+            <button @onclick="GeneratePdfClick" disabled="@generating">Generate</button>
         </div>
     </div>
     <b>Status:</b>
@@ -106,6 +120,9 @@ else
     private Guid invoiceId;
 
     private InvoiceResponse? invoice;
+    private Language documentLanguage = Language.LT;
+    private DocumentType documentType = DocumentType.Invoice;
+    private bool generating;
     private PaginationState pagination = new PaginationState { ItemsPerPage = 50 };
     private IQueryable<InvoiceItemResponse> itemsQueryable = Enumerable.Empty<InvoiceItemResponse>().AsQueryable();
 
@@ -138,26 +155,40 @@ else
         invoice = await _invoiceClient.Get(invoiceId);
     }
 
-    private async Task GeneratePdfClick(DocumentType documentType)
+    private static string DocumentTypeName(DocumentType type) => type switch
     {
-        InvoiceGenerateRequest request = new()
+        DocumentType.Invoice => "Invoice",
+        DocumentType.JobDoneAct => "Job done act",
+        _ => type.ToString()
+    };
+
+    private async Task GeneratePdfClick()
+    {
+        if (invoice == null || generating)
+            return;
+
+        generating = true;
+        try
         {
-            Id = invoiceId,
-            LanguageCode = Language.LT,
-            DocumentType = documentType
-        };
-
-        var fileResult = await _invoiceClient.GeneratePDF(request);
-
-        using (var fileStream = fileResult.Content)
-        {
-            var documentsDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            var filePath = Path.Combine(documentsDir, fileResult.FileName ?? "invoice.pdf");
-
-            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            InvoiceGenerateRequest request = new()
             {
-                await fileStream.CopyToAsync(fs);
-            }
+                Id = invoiceId,
+                LanguageCode = documentLanguage,
+                DocumentType = documentType
+            };
+
+            var fileResult = await _invoiceClient.GeneratePDF(request);
+            string fileName = string.IsNullOrWhiteSpace(fileResult.FileName)
+                ? $"{invoice.SeriesName}-{invoice.InvoiceNumber:D6}.pdf"
+                : fileResult.FileName;
+
+            using var fileStream = fileResult.Content;
+            using var streamReference = new DotNetStreamReference(fileStream);
+            await _jsRuntime.InvokeVoidAsync("downloadFileFromStream", fileName, streamReference);
+        }
+        finally
+        {
+            generating = false;
         }
     }
     
