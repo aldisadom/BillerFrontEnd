@@ -14,7 +14,7 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 | Where | What |
 |---|---|
-| `src/FrontEnd` | Blazor Server (.NET 8, `InteractiveServer`), FluentUI 3.7.8, QuickGrid, AutoMapper 13 (to be removed) |
+| `src/FrontEnd` | Blazor Server (.NET 10 since BIL-94, `InteractiveServer`), QuickGrid, AutoMapper 13 (to be removed). FluentUI was removed in BIL-94 |
 | Pages | 24 `.razor` pages under `Components/Pages/{Customer,Invoice,Items,Seller,Users}`. Largest: `Invoices_update` (288 lines), `Invoices_add` (272) |
 | API clients | `BillerContracts.Clients` 1.1.1 NuGet package, tested in BillerContracts (`Clients.Tests`). Pages inject its `I*Client` interfaces, so they're easy to mock |
 | `MappingProfiles` | One AutoMapper profile per entity, to be replaced by hand-written extension methods |
@@ -33,7 +33,8 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 
 - `tests/FrontEnd.Tests/FrontEnd.Tests.csproj`: xUnit, `bunit`, `Moq`, `coverlet.collector`. References `FrontEnd`.
 - Add it to `BillerFrontEnd.sln`.
-- A small base class that registers mocks for every `I*Client` and the FluentUI services, so each test only sets up what it uses.
+- A small base class that registers mocks for every `I*Client`, so each test only sets up what it uses.
+- Test packages follow the package limits in `CLAUDE.md` (`net10.0`, `xunit.v3.mtp-off`, AwesomeAssertions, Moq pinned).
 
 ## Step 2: Mapping methods (quick win)
 
