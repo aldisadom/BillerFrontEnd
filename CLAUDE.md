@@ -3,7 +3,8 @@
 Blazor Server UI for the Biller API. One owner, runs in docker compose next to Biller.
 
 ## Stack
-- .NET 8 Blazor with interactive server rendering, QuickGrid and Fluent UI.
+- .NET 10 Blazor with interactive server rendering and QuickGrid. No Fluent UI: the old
+  `Microsoft.Fast.Components.FluentUI` package was removed in BIL-94 (no component used it).
 - All API calls go through the `BillerContracts.Clients` NuGet package (`src/FrontEnd/FrontEnd.csproj`),
   configured by `ClientsOptions`: `appsettings.LocalDocker.json` (`make run`, inside compose) uses
   `http://webapi:8070/...`; every other environment inherits `http://127.0.0.1:8090/...` (the API's
@@ -43,6 +44,23 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
   name, else on up-to-date master:
   `bash ../Biller/.claude/skills/_sync-repos/scripts/sync-repos.sh --branch "$(git branch --show-current)" Biller BillerContracts BillioIntegrationTest`
   (add `--sync` to switch and fast-forward).
+
+## Package limits
+Every Biller repo has these limits. Keep them when updating packages.
+- Target `net10.0`. A package whose newest version needs a newer .NET stays on the last version that
+  supports `net10.0`, until all four repos move .NET together.
+- QuestPDF: Community licence only (`LicenseType.Community`). Before an update, check that the
+  business still qualifies (under USD 1M revenue, not public sector or publicly traded) and read the
+  new version's licence.
+- Assertions: AwesomeAssertions (Apache 2.0). Don't add FluentAssertions back: v8+ needs a paid
+  licence for commercial use.
+- Moq: below 4.20.0, pinned as `[4.18.4,4.20.0)` (4.20.0 added SponsorLink build-time telemetry).
+- xUnit: `xunit.v3.mtp-off`, not `xunit.v3`. The .NET 10 SDK's `dotnet test` doesn't run xUnit's
+  default Microsoft.Testing.Platform runner through VSTest, and the test scripts rely on VSTest.
+- Before taking a new major version, read its release notes and check its licence.
+- This repo only: AutoMapper stays at 13.0.1 until BIL-91 removes it. Don't update it: 15.0 and later
+  need a commercial licence. 13.0.1 has a known high-severity advisory (NU1903,
+  GHSA-rvv3-g6hj-g44x), one more reason to finish BIL-91.
 
 ## Running
 Start Biller first (`docker compose up -d --build` in `../Biller`): this compose file joins Biller's
