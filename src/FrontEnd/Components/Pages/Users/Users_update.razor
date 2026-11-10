@@ -1,5 +1,4 @@
 ﻿@page "/users/update/{IdString}"
-@using AutoMapper
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Customer
 @using BillerContracts.Requests.Seller
@@ -8,10 +7,10 @@
 @using BillerContracts.Responses.Seller
 @using BillerContracts.Responses.User
 @using Domain.Exceptions
+@using FrontEnd.MappingProfiles
 
 @inject ISellerClient _sellerClient
 @inject IUserClient _userClient
-@inject IMapper _mapper
 @inject NavigationManager _navigationManager
 
 @attribute [StreamRendering]
@@ -62,7 +61,7 @@ else
         }
 
         user = await _userClient.Get(userId);
-        userUpdate = _mapper.Map<UserUpdateRequest>(user);
+        userUpdate = user.ToUpdateRequest();
     }
 
     private async Task UpdateClick()

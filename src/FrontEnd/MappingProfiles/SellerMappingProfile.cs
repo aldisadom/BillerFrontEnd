@@ -1,20 +1,30 @@
-﻿using AutoMapper;
-using BillerContracts.Requests.Seller;
+﻿using BillerContracts.Requests.Seller;
 using BillerContracts.Responses.Seller;
 
 namespace FrontEnd.MappingProfiles;
 
 /// <summary>
-/// Mapper profiles
+/// Seller mapping
 /// </summary>
-public class SellerMappingProfile : Profile
+public static class SellerResponseExtensions
 {
     /// <summary>
-    /// Mapper profile
+    /// Builds the update request for the seller edit page
     /// </summary>
-    public SellerMappingProfile()
+    public static SellerUpdateRequest ToUpdateRequest(this SellerResponse from)
     {
-        //source, destination (which parameters must be mapped)
-        CreateMap<SellerResponse, SellerUpdateRequest>(MemberList.Destination);
+        return new SellerUpdateRequest
+        {
+            Id = from.Id,
+            CompanyNumber = from.CompanyNumber,
+            CompanyName = from.CompanyName,
+            Street = from.Street,
+            City = from.City,
+            State = from.State,
+            Email = from.Email,
+            Phone = from.Phone,
+            BankName = from.BankName,
+            BankNumber = from.BankNumber
+        };
     }
 }

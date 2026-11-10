@@ -1,14 +1,13 @@
 ﻿@page "/sellers/update/{IdString}"
-@using AutoMapper
 @using BillerContracts.Requests.Seller
 @using BillerContracts.Responses.Seller
 @using BillerContracts.Clients.Interfaces
 @using Domain.Exceptions
+@using FrontEnd.MappingProfiles
 
 @inject NavigationManager _navigationManager
 @inject ISellerClient _sellerClient
 @inject ICustomerClient _customerClient
-@inject IMapper _mapper
 
 @attribute [StreamRendering]
 
@@ -83,7 +82,7 @@ else
         }
 
         seller = await _sellerClient.Get(sellerId);
-        sellerUpdate = _mapper.Map<SellerUpdateRequest>(seller);
+        sellerUpdate = seller.ToUpdateRequest();
     }
 
     private async Task UpdateClick()

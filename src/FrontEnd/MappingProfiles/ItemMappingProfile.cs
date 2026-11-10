@@ -1,20 +1,24 @@
-﻿using AutoMapper;
-using BillerContracts.Requests.Item;
+﻿using BillerContracts.Requests.Item;
 using BillerContracts.Responses.Item;
 
 namespace FrontEnd.MappingProfiles;
 
 /// <summary>
-/// Mapper profiles
+/// Item mapping
 /// </summary>
-public class ItemMappingProfile : Profile
+public static class ItemResponseExtensions
 {
     /// <summary>
-    /// Mapper profile
+    /// Builds the update request for the item edit page
     /// </summary>
-    public ItemMappingProfile()
+    public static ItemUpdateRequest ToUpdateRequest(this ItemResponse from)
     {
-        //source, destination (which parameters must be mapped)
-        CreateMap<ItemResponse, ItemUpdateRequest>(MemberList.Destination);
+        return new ItemUpdateRequest
+        {
+            Id = from.Id,
+            Name = from.Name,
+            Price = from.Price,
+            Quantity = from.Quantity
+        };
     }
 }

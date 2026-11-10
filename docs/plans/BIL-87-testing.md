@@ -35,6 +35,9 @@ Jira: [BIL-87](https://aldisadom.atlassian.net/browse/BIL-87). Epic: BIL-89 (Bil
 - Add it to `BillerFrontEnd.sln`.
 - A small base class that registers mocks for every `I*Client`, so each test only sets up what it uses.
 - Test packages follow the package limits in `CLAUDE.md` (`net10.0`, `xunit.v3.mtp-off`, AwesomeAssertions, Moq pinned).
+- Done with BIL-91: the project, its place in the solution and the CI step, with xUnit v3,
+  AwesomeAssertions and coverlet. `bunit`, `Moq` and the client-mock base class come with the first
+  page tests (step 3), so nothing unused is added before then.
 
 ## Step 2: Mapping methods (quick win)
 
