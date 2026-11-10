@@ -67,7 +67,8 @@ Start Biller first (`docker compose up -d --build` in `../Biller`): this compose
 
 ## Before a PR
 1. `dotnet build BillerFrontEnd.sln -c Release`, then `dotnet test BillerFrontEnd.sln --no-build -c Release`.
-   Paste the `Build succeeded` / error lines and the `Passed!` / `Failed!` line.
+   Paste the `Build succeeded` / error lines and the `Passed!` / `Failed!` line. Both must pass:
+   don't open or update a PR with a build error or a failing test. CI runs the same tests.
 2. Open each changed page against a running Biller and say what you checked.
 3. Run `/code-review` on the branch and tell it to follow `REVIEW.md`. Fix Important findings,
    answer the rest, at most 3 rounds.
