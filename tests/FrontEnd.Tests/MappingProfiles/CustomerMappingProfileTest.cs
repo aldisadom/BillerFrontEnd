@@ -18,7 +18,7 @@ public class CustomerMappingProfileTest
             CompanyNumber = "123456789",
             CompanyName = "Winterfell",
             Street = "Kings road 1",
-            City = "Winterfell",
+            City = "Wintertown",
             State = "The North",
             Email = "ned@winterfell.com",
             Phone = "+37060000000"
