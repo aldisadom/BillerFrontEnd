@@ -1,20 +1,29 @@
-﻿using AutoMapper;
-using BillerContracts.Requests.Customer;
+﻿using BillerContracts.Requests.Customer;
 using BillerContracts.Responses.Customer;
 
 namespace FrontEnd.MappingProfiles;
 
 /// <summary>
-/// Mapper profiles
+/// Customer mapping
 /// </summary>
-public class CustomerMappingProfile : Profile
+public static class CustomerResponseExtensions
 {
     /// <summary>
-    /// Mapper profile
+    /// Builds the update request for the customer edit page
     /// </summary>
-    public CustomerMappingProfile()
+    public static CustomerUpdateRequest ToUpdateRequest(this CustomerResponse from)
     {
-        //source, destination (which parameters must be mapped)
-        CreateMap<CustomerResponse, CustomerUpdateRequest>(MemberList.Destination);
+        return new CustomerUpdateRequest
+        {
+            Id = from.Id,
+            SeriesId = from.SeriesId,
+            CompanyName = from.CompanyName,
+            CompanyNumber = from.CompanyNumber,
+            Street = from.Street,
+            City = from.City,
+            State = from.State,
+            Email = from.Email,
+            Phone = from.Phone
+        };
     }
 }

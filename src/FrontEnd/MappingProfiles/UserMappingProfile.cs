@@ -1,20 +1,23 @@
-﻿using AutoMapper;
-using BillerContracts.Requests.User;
+﻿using BillerContracts.Requests.User;
 using BillerContracts.Responses.User;
 
 namespace FrontEnd.MappingProfiles;
 
 /// <summary>
-/// Mapper profiles
+/// User mapping
 /// </summary>
-public class UserMappingProfile : Profile
+public static class UserResponseExtensions
 {
     /// <summary>
-    /// Mapper profile
+    /// Builds the update request for the user edit page
     /// </summary>
-    public UserMappingProfile()
+    public static UserUpdateRequest ToUpdateRequest(this UserResponse from)
     {
-        //source, destination (which parameters must be mapped) 
-        CreateMap<UserResponse, UserUpdateRequest>(MemberList.Destination);
+        return new UserUpdateRequest
+        {
+            Id = from.Id,
+            Name = from.Name,
+            LastName = from.LastName
+        };
     }
 }

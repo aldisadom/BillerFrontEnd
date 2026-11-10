@@ -1,13 +1,12 @@
 ﻿@page "/items/update/{IdString}"
-@using AutoMapper
 @using BillerContracts.Clients.Interfaces
 @using BillerContracts.Requests.Item
 @using BillerContracts.Responses.Item
 @using Domain.Exceptions
+@using FrontEnd.MappingProfiles
 
 @inject NavigationManager _navigationManager
 @inject IItemClient _itemClient
-@inject IMapper _mapper
 
 @attribute [StreamRendering]
 
@@ -58,7 +57,7 @@ else
         }
 
         item = await _itemClient.Get(itemId);
-        itemUpdate = _mapper.Map<ItemUpdateRequest>(item);
+        itemUpdate = item.ToUpdateRequest();
     }
 
     private async Task UpdateClick()

@@ -1,5 +1,4 @@
 using BillerContracts.Clients;
-using FrontEnd.Capabilities;
 using FrontEnd.Components;
 using Serilog;
 
@@ -17,7 +16,6 @@ public class Program
 
         // Add services to the container.
         builder.Services
-            .ConfigureAutoMapper()
             .AddRazorComponents()
             .AddInteractiveServerComponents();
 

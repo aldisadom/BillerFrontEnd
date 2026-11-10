@@ -48,18 +48,31 @@ Every update-request property has a response property with the same name, so eac
    then fails a test.
 5. **No other mapping library** (Mapster, Mapperly, …) either.
 
+## Changes since the plan was written (master @ c352e31)
+
+- BIL-65 landed: `CustomerUpdateRequest` has `SeriesId` instead of `InvoiceName`/`InvoiceNumber`, so the
+  customer method copies `SeriesId`. `InvoiceUpdateRequest` has no `InvoiceNumber`.
+- BIL-86/BIL-99 already copy `SellerId` and `CustomerId` directly. The `InvalidOperationException`s in
+  design decision 3 were already gone.
+- BIL-65 also added `SeriesResponseExtensions.ToUpdateRequest()`, so step 5 tests 7 methods, not 6.
+- `Invoices_id.razor` no longer injects `IMapper`.
+- BIL-75 (units) hasn't landed, so items have no unit yet.
+
 ## Steps
 
-1. Write the 4 remaining methods in the other 4 `MappingProfiles/*.cs` files (BIL-86 did the invoice ones). Remove the `Profile` classes.
-2. In the 4 remaining update pages, replace `_mapper.Map<X>(y)` with `y.ToUpdateRequest()`, and remove `@using AutoMapper`
-   and `@inject IMapper _mapper` (also from `Invoices_id.razor`, which doesn't use it).
-3. Delete `Capabilities/StartupMapper.cs` and remove `.ConfigureAutoMapper()` from `Program.cs`.
-4. Remove the `AutoMapper` PackageReference from `src/FrontEnd/FrontEnd.csproj` and `src/Domain/Domain.csproj`.
-5. Mapping tests (design decision 4), one per method, including the 2 invoice methods from BIL-86.
+1. [x] Write the 4 remaining methods in the other 4 `MappingProfiles/*.cs` files (BIL-86 did the invoice ones). Remove the `Profile` classes.
+2. [x] In the 4 remaining update pages, replace `_mapper.Map<X>(y)` with `y.ToUpdateRequest()`, and remove `@using AutoMapper`
+   and `@inject IMapper _mapper`. (`Invoices_id.razor` had already dropped it.)
+3. [x] Delete `Capabilities/StartupMapper.cs` and remove `.ConfigureAutoMapper()` from `Program.cs`.
+4. [x] Remove the `AutoMapper` PackageReference from `src/FrontEnd/FrontEnd.csproj` and `src/Domain/Domain.csproj`.
+5. [x] Mapping tests (design decision 4), one per method, including the 2 invoice methods from BIL-86
+   and the series method: `tests/FrontEnd.Tests/MappingProfiles/`, with `MappingTestHelper.TestMappedAllTo`
+   (Biller's `MappedAllTo` check). Invoice `Items` is checked separately, and `Items` of `null` has its own test.
 6. Check:
-   - `grep -rn AutoMapper src` finds nothing.
-   - `dotnet build BillerFrontEnd.sln -c Release` passes, and the tests pass.
-   - Against a running Biller, open and save each update page: customer, item, seller, user, and
+   - [x] `grep -rn AutoMapper src` finds nothing outside `bin`/`obj`.
+   - [x] `dotnet build BillerFrontEnd.sln -c Release` passes, and the tests pass (8). Dropping a property
+     from a method fails its test.
+   - [ ] Against a running Biller, open and save each update page: customer, item, seller, user, and
      invoice (including picking another seller and customer). The saved record keeps every field.
 
 ## Order and other plans

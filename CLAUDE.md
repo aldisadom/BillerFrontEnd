@@ -9,10 +9,11 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
   configured by `ClientsOptions`: `appsettings.LocalDocker.json` (`make run`, inside compose) uses
   `http://webapi:8070/...`; every other environment inherits `http://127.0.0.1:8090/...` (the API's
   host port) from `appsettings.json`.
-- **AutoMapper is not allowed** (in any Biller repo), nor any other mapping library. The existing
-  profiles in `src/FrontEnd/MappingProfiles/` are to be replaced by hand-written `ToUpdateRequest()`
-  extension methods (plan: `docs/plans/BIL-91-remove-automapper.md`). Don't add maps or
-  `IMapper` injections. Write an extension method that sets every property instead.
+- **AutoMapper is not allowed** (in any Biller repo), nor any other mapping library. Map with
+  hand-written `ToUpdateRequest()` extension methods in `src/FrontEnd/MappingProfiles/` that set every
+  property, each with a test in `tests/FrontEnd.Tests/MappingProfiles/` (BIL-91).
+- Tests: `tests/FrontEnd.Tests` (xUnit v3, AwesomeAssertions), run in CI after the build. Page tests
+  with bUnit come with BIL-87.
 - `src/Domain`: `AppFilter` and `NotFoundException`. API errors arrive as `ClientAPIException` with an
   `ErrorModel` from BillerContracts; `AppErrorBoundary` (`Components/Layout/`) shows them in place of the
   page, with the text from `Capabilities/ErrorMessages.cs`.
@@ -32,7 +33,8 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 - Biller owns validation and stored totals. A total shown on a page must match the API's `TotalPrice`.
   The one exception is `Invoices_update.razor`: it shows the total after saving, from the current
   item prices, because `PUT /invoices` copies line names and prices from the items (BIL-86).
-- There are no tests yet (BIL-87), so check changed pages in the browser.
+- Only the mapping methods have tests so far (pages come with BIL-87), so check changed pages in the
+  browser.
 - Don't add comments (Razor `@* *@`, HTML `<!-- -->`, C# `//`) or hint text on pages without asking the
   owner first.
 - A handler that must not run while data loads, or without a required value, checks that itself
@@ -58,16 +60,15 @@ Every Biller repo has these limits. Keep them when updating packages.
 - xUnit: `xunit.v3.mtp-off`, not `xunit.v3`. The .NET 10 SDK's `dotnet test` doesn't run xUnit's
   default Microsoft.Testing.Platform runner through VSTest, and the test scripts rely on VSTest.
 - Before taking a new major version, read its release notes and check its licence.
-- This repo only: AutoMapper stays at 13.0.1 until BIL-91 removes it. Don't update it: 15.0 and later
-  need a commercial licence. 13.0.1 has a known high-severity advisory (NU1903,
-  GHSA-rvv3-g6hj-g44x), one more reason to finish BIL-91.
 
 ## Running
 Start Biller first (`docker compose up -d --build` in `../Biller`): this compose file joins Biller's
 `billio_network`. Then `docker compose up -d --build` here (or `make run`). UI at http://localhost:8080.
 
 ## Before a PR
-1. `dotnet build BillerFrontEnd.sln -c Release`. Paste the `Build succeeded` / error lines.
+1. `dotnet build BillerFrontEnd.sln -c Release`, then `dotnet test BillerFrontEnd.sln --no-build -c Release`.
+   Paste the `Build succeeded` / error lines and the `Passed!` / `Failed!` line. Both must pass:
+   don't open or update a PR with a build error or a failing test. CI runs the same tests.
 2. Open each changed page against a running Biller and say what you checked.
 3. Run `/code-review` on the branch and tell it to follow `REVIEW.md`. Fix Important findings,
    answer the rest, at most 3 rounds.
