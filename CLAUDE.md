@@ -40,6 +40,8 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 - A handler that must not run while data loads, or without a required value, checks that itself
   (`if (...) return;`). `disabled` on a button only changes what the user sees: a click can reach the
   server before the disabled render does.
+- Update `README.md` in the same change when the change makes it wrong: a new or changed command,
+  setting, port, endpoint group, package, or project layout.
 - Plans for work only in this repo go in `docs/plans/BIL-<n>-<slug>.md` here. Plans that change
   several repos live in Biller's `docs/plans/`.
 - Before reading, comparing or using another Biller repo, put it on the branch with this branch's
@@ -70,6 +72,9 @@ Start Biller first (`docker compose up -d --build` in `../Biller`): this compose
    Paste the `Build succeeded` / error lines and the `Passed!` / `Failed!` line. Both must pass:
    don't open a PR, or push code to one, with a build error or a failing test. CI runs the same tests.
 2. Open each changed page against a running Biller and say what you checked.
-3. Run `/code-review` on the branch and tell it to follow `REVIEW.md`. Fix Important findings,
+3. Check `README.md` against the diff, and update it when the change makes it wrong.
+4. Run `/code-review high` on the branch on Opus at high effort (when the session runs another model
+   or a lower effort, start a general-purpose agent with `model: opus` and `effort: high` that runs
+   it), and tell it to follow `REVIEW.md`. Fix Important findings,
    answer the rest, at most 3 rounds.
-4. Fill `.github/pull_request_template.md`.
+5. Fill `.github/pull_request_template.md`.
