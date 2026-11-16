@@ -1,5 +1,7 @@
 # BillerFrontEnd
 
+[Lietuviškai](docs/README_lt.md)
+
 The web UI of Biller: a Blazor Server app for users, sellers, invoice series, customers, items and
 invoices, including downloading invoice and act PDFs. It has no database of its own. Every page
 reads and writes through the Biller API.

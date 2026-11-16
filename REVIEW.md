@@ -8,7 +8,7 @@ Failure here looks like:
 - New AutoMapper code (a profile, a map, an `IMapper` injection) or another mapping library. AutoMapper is being removed (`docs/plans/BIL-91-remove-automapper.md`).
 - A page builds an API URL itself instead of using a client.
 - Paging or a filter shows the wrong page, or loses the filter after navigation.
-- A change makes `README.md` wrong and doesn't update it.
+- A change makes `README.md` wrong and doesn't update it, or updates it without `docs/README_lt.md`.
 
 Skip: `bin/`, `obj/`, `src/FrontEnd/wwwroot/bootstrap/`.
 
