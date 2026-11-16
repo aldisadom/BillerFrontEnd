@@ -33,9 +33,11 @@ docker compose up -d --build    # here, or: make run
 The UI is at http://localhost:8080.
 
 `make update` is for the PC the app is deployed on, with `master` checked out: it resets the
-checked-out branch to `origin/master` (changes to tracked files and local commits are lost; files
-git doesn't track stay and are built in), switches to
-`master` and starts the container again. Known problem: it resets before it fetches, so it deploys
+checked-out branch to `origin/master` (changes to tracked files and local commits are lost, and so
+is an untracked file at a path `origin/master` or the local `master` tracks), switches to `master`
+and starts the container again. Other untracked files stay. One in a project under `src/` is built
+into the UI (an untracked `.razor` or `.cs` file is compiled in), unless `.dockerignore` leaves it
+out (`bin/`, `obj/` and others). Known problem: it resets before it fetches, so it deploys
 the master that was fetched the time before, and only a second run gets the newest one. On another
 branch, the first run resets that branch and deploys the local `master` as it is.
 

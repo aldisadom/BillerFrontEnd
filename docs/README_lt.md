@@ -39,9 +39,12 @@ Naudotojo sąsaja veikia adresu http://localhost:8080.
 
 `make update` skirta kompiuteriui, kuriame sistema įdiegta ir kuriame aktyvi `master` šaka: ji
 atstato aktyvią šaką į `origin/master` (sekamų failų pakeitimai ir vietiniai įrašai (commit)
-prarandami; git nesekami failai lieka ir patenka į kompiliavimą), persijungia į `master` ir iš
-naujo paleidžia konteinerį. Žinoma problema: ji atstato prieš atsisiųsdama (fetch), todėl įdiegia
-tą master, kuris buvo atsisiųstas praėjusį kartą, ir tik antras paleidimas gauna naujausią. Kitoje
+prarandami, kaip ir failas, kurio git neseka, jei jo kelią seka `origin/master` arba vietinė
+`master`), persijungia į `master` ir iš naujo paleidžia konteinerį. Kiti failai, kurių git neseka,
+lieka. Toks failas projekte aplanke `src/` įtraukiamas į sąsają (pvz., `.razor` ar `.cs` failas
+sukompiliuojamas), nebent `.dockerignore` jį praleidžia (`bin/`, `obj/` ir kt.). Žinoma problema:
+ji atstato prieš atsisiųsdama (fetch), todėl įdiegia tą `master` šaką, kuri buvo atsisiųsta
+praėjusį kartą, ir tik antras paleidimas gauna naujausią. Kitoje
 šakoje pirmas paleidimas atstato tą šaką ir įdiegia vietinę `master` tokią, kokia ji yra.
 
 Be Docker, paleista su `dotnet run --project src/FrontEnd`, sąsaja veikia adresu
@@ -56,12 +59,12 @@ dotnet build BillerFrontEnd.sln -c Release
 dotnet test BillerFrontEnd.sln --no-build -c Release
 ```
 
-Testai tikrina atvaizdavimo metodus. Puslapiai testų dar neturi, todėl pakeistas puslapis
+Testai tikrina `MappingProfiles/` metodus, kurie atsakymą paverčia atnaujinimo užklausa. Puslapiai testų dar neturi, todėl pakeistas puslapis
 tikrinamas naršyklėje, kai veikia Biller.
 
 ## Konfigūracija
 
-API adresai yra `ClientsOptions`, po vieną URL kiekvienam ištekliui:
+API adresai yra `ClientsOptions` sekcijoje, po vieną URL kiekvienam ištekliui:
 
 - `src/FrontEnd/appsettings.LocalDocker.json` (Docker Compose): `http://webapi:8070/...`, API
   konteineris bendrame tinkle.
