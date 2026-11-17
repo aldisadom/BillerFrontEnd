@@ -6,7 +6,8 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 - .NET 10 Blazor with interactive server rendering and QuickGrid. No Fluent UI: the old
   `Microsoft.Fast.Components.FluentUI` package was removed in BIL-94 (no component used it).
 - All API calls go through the `BillerContracts.Clients` NuGet package (`src/FrontEnd/FrontEnd.csproj`),
-  configured by `ClientsOptions`: `appsettings.LocalDocker.json` (`make run`, inside compose) uses
+  configured by `ClientsOptions`: `appsettings.Prod.json` (`make run`, inside compose) and
+  `appsettings.Dev.json` (Biller's test stack, which also sets the URLs itself) use
   `http://webapi:8070/...`; every other environment inherits `http://127.0.0.1:8090/...` (the API's
   host port) from `appsettings.json`.
 - **AutoMapper is not allowed** (in any Biller repo), nor any other mapping library. Map with
