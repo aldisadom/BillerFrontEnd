@@ -15,7 +15,7 @@ kokie yra angliškame faile.
 | Repozitorija | Kas tai |
 |---|---|
 | [Biller](https://github.com/aldisadom/Biller) | API, duomenų bazės migracijos ir PDF dokumentai |
-| [BillerContracts](https://github.com/aldisadom/BillerContracts) | Užklausų ir atsakymų įrašai, išvardijimai (enum) ir tipizuoti HTTP klientai, skelbiami kaip NuGet paketai `BillerContracts` ir `BillerContracts.Clients` |
+| [BillerContracts](https://github.com/aldisadom/BillerContracts) | Užklausų ir atsakymų įrašai, išvardijimai (enum) ir tipizuoti HTTP klientai, skelbiami NuGet paketais `BillerContracts` ir `BillerContracts.Clients` |
 | [BillerFrontEnd](https://github.com/aldisadom/BillerFrontEnd) | Blazor naudotojo sąsaja. API ji kviečia per `BillerContracts.Clients` |
 | [BillioIntegrationTest](https://github.com/aldisadom/BillioIntegrationTest) | Testai, kurie kviečia veikiančią API per HTTP |
 
