@@ -10,6 +10,11 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // A Debug build (Rider's Docker fast mode) finds blazor.web.js and the scoped CSS through the
+        // static web assets manifest, which ASP.NET reads only in Development; docker compose runs Prod.
+        // A published app has no manifest, so this does nothing there.
+        builder.WebHost.UseStaticWebAssets();
+
         bool detailedErrors = builder.Configuration.GetValue<bool>("DetailedErrors");
 
         builder.Services.AddBillerClients(builder.Configuration.GetSection("ClientsOptions"));
