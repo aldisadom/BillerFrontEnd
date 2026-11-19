@@ -32,7 +32,8 @@ public class InvoiceMappingProfileTest
                     Name = "Iron throne",
                     Price = 123.67M,
                     Quantity = 2,
-                    Comments = "Forged from swords"
+                    Comments = "Forged from swords",
+                    Version = 2
                 },
                 new InvoiceItemResponse
                 {
@@ -40,7 +41,8 @@ public class InvoiceMappingProfileTest
                     Name = "Valyrian sword",
                     Price = 999.99M,
                     Quantity = 1,
-                    Comments = "Longclaw"
+                    Comments = "Longclaw",
+                    Version = 1
                 }
             ],
             Comments = "Winter is coming",
@@ -83,7 +85,8 @@ public class InvoiceMappingProfileTest
             Name = "Iron throne",
             Price = 123.67M,
             Quantity = 2,
-            Comments = "Forged from swords"
+            Comments = "Forged from swords",
+            Version = 3
         };
 
         //Act

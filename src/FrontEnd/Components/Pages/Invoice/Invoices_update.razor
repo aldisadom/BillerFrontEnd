@@ -56,13 +56,18 @@ else
     <br />
     @invoice?.CustomerName
     <br />
-    <b>Items:</b>        
+    <b>Items:</b>
+    @if (invoiceUpdate.Items.Any(IsOutdated))
+    {
+        <button style="margin-left: 20px;" @onclick="RefreshAllClick">Refresh all</button>
+    }
     <br />
     <table class="table">
         <thead>
             <tr>
-                <td style="width:40%">Items</td>
-                <td style="width:39%">Comment</td>
+                <td style="width:30%">Items</td>
+                <td style="width:20%">Version</td>
+                <td style="width:29%">Comment</td>
                 <td style="width:7%">Quantity</td>
                 <td style="width:7%">Unit price</td>
                 <td style="width:7%">Total price</td>
@@ -87,20 +92,38 @@ else
                     </td>
                     @if (itemFilters[index].IsValid())
                     {
-                        Guid id = itemFilters[index].SelectedId;
-                        ItemResponse item = itemsList!.Find(i => i.Id == id)!;
+                        InvoiceItemRequest line = invoiceUpdate.Items[index];
+                        decimal unitPrice = LinePrice(line);
+                        <td>
+                            @if (versionsByItem.TryGetValue(line.Id, out List<ItemVersionResponse>? versions))
+                            {
+                                <select class="form-select" @bind="invoiceUpdate.Items[index].Version">
+                                    @foreach (var version in versions)
+                                    {
+                                        <option value="@version.Version">v@(version.Version) @version.Name @version.Price</option>
+                                    }
+                                </select>
+                                @if (IsOutdated(line))
+                                {
+                                    <button @onclick="() => RefreshClick(index)">Refresh</button>
+                                }
+                            }
+                            else if (line.Version is not null)
+                            {
+                                @($"v{line.Version}")
+                            }
+                        </td>
                         <td>
                             <input type="text" @bind="invoiceUpdate.Items[index].Comments" />
                         </td>
                         <td>
                             <input type="decimal" @bind="invoiceUpdate.Items[index].Quantity" />
                         </td>
-                        decimal itemTotalPrice = item.Price * invoiceUpdate.Items[index].Quantity;
                         <td>
-                            @item.Price
+                            @unitPrice
                         </td>
                         <td>
-                            @itemTotalPrice
+                            @(unitPrice * line.Quantity)
                         </td>
                     }
                 </tr>
@@ -109,9 +132,7 @@ else
     </table>
     <b>Total:</b>
     <br />
-    decimal totalPrice = 0;
-    foreach (var line in invoiceUpdate.Items) //go the list of items and get the price from the itemsList
-        totalPrice += itemsList!.Find(i => i.Id == line.Id)!.Price * line.Quantity;
+    decimal totalPrice = invoiceUpdate.Items.Sum(line => LinePrice(line) * line.Quantity);
     <b>@totalPrice</b>
     <br /> 
 }
@@ -126,8 +147,52 @@ else
     private InvoiceUpdateRequest? invoiceUpdate;
 
     private List<ItemResponse>? itemsList;
+    private Dictionary<Guid, List<ItemVersionResponse>> versionsByItem = new();
+    private Dictionary<Guid, InvoiceItemResponse> deletedItemLines = new();
 
     private List<AppFilter> itemFilters { get; set; } = new();
+
+    private int? CurrentVersion(Guid itemId)
+    {
+        return itemsList?.Find(i => i.Id == itemId)?.Version;
+    }
+
+    private bool IsOutdated(InvoiceItemRequest line)
+    {
+        int? current = CurrentVersion(line.Id);
+        return current is not null && line.Version < current;
+    }
+
+    private decimal LinePrice(InvoiceItemRequest line)
+    {
+        if (versionsByItem.TryGetValue(line.Id, out List<ItemVersionResponse>? versions))
+        {
+            ItemVersionResponse? version = versions.Find(v => v.Version == line.Version);
+            if (version is not null)
+                return version.Price;
+        }
+
+        return deletedItemLines.TryGetValue(line.Id, out InvoiceItemResponse? stored) ? stored.Price : 0;
+    }
+
+    private void RefreshClick(int index)
+    {
+        if (invoiceUpdate is null || index >= invoiceUpdate.Items.Count)
+            return;
+
+        InvoiceItemRequest line = invoiceUpdate.Items[index];
+        if (IsOutdated(line))
+            line.Version = CurrentVersion(line.Id);
+    }
+
+    private void RefreshAllClick()
+    {
+        if (invoiceUpdate is null)
+            return;
+
+        foreach (InvoiceItemRequest line in invoiceUpdate.Items.Where(IsOutdated))
+            line.Version = CurrentVersion(line.Id);
+    }
 
     public void ItemChange(int index)
     {        
@@ -149,6 +214,7 @@ else
             invoiceUpdate!.Items.Add(new InvoiceItemRequest());
 
         invoiceUpdate!.Items[index].Id = selectedId;
+        invoiceUpdate!.Items[index].Version = CurrentVersion(selectedId);
 
         if (add)
         {
@@ -170,6 +236,13 @@ else
 
         await GetItems(invoiceUpdate.CustomerId);
 
+        foreach (ItemResponse item in itemsList!)
+            versionsByItem[item.Id] = (await _itemClient.GetVersions(item.Id)).Versions;
+
+        foreach (InvoiceItemResponse line in invoice.Items ?? [])
+            if (!versionsByItem.ContainsKey(line.Id))
+                deletedItemLines[line.Id] = line;
+
         itemFilters = new List<AppFilter>();
         for (int i = 0; i < invoiceUpdate.Items.Count + 1; i++)
         {
@@ -179,7 +252,13 @@ else
         }
 
         for (int i = 0; i < invoiceUpdate.Items.Count; i++)
-            itemFilters[i].UpdateSelected(invoiceUpdate.Items[i].Id);
+        {
+            Guid itemId = invoiceUpdate.Items[i].Id;
+            if (deletedItemLines.TryGetValue(itemId, out InvoiceItemResponse? stored))
+                itemFilters[i].SelectionList.TryAdd(itemId, stored.Name);
+
+            itemFilters[i].UpdateSelected(itemId);
+        }
     }
 
     private async Task GetItems(Guid customerId)

@@ -37,7 +37,30 @@ else
     <b>Quantity:</b>
     <br />
     @item.Quantity
-    <br />    
+    <br />
+    <b>Versions:</b>
+    <br />
+    <table class="table">
+        <thead>
+            <tr>
+                <td>Version</td>
+                <td>Name</td>
+                <td>Price</td>
+                <td>Changed</td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (ItemVersionResponse version in versions)
+            {
+                <tr>
+                    <td>v@(version.Version)</td>
+                    <td>@version.Name</td>
+                    <td>@version.Price</td>
+                    <td>@version.ChangedDate.ToUniversalTime().ToString("yyyy-MM-dd HH:mm") UTC</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
 @code {
@@ -46,6 +69,7 @@ else
 
     private Guid itemId;
     private ItemResponse? item;
+    private List<ItemVersionResponse> versions = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,6 +79,7 @@ else
         }
 
         item = await _itemClient.Get(itemId);
+        versions = (await _itemClient.GetVersions(itemId)).Versions;
     }
 
     private void EditClick()

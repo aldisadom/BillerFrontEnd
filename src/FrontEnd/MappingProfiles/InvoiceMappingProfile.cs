@@ -25,7 +25,8 @@ public static class InvoiceResponseExtensions
         {
             Id = from.Id,
             Quantity = from.Quantity,
-            Comments = from.Comments
+            Comments = from.Comments,
+            Version = from.Version
         };
     }
 }
