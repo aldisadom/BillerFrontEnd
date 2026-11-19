@@ -32,8 +32,10 @@ Blazor Server UI for the Biller API. One owner, runs in docker compose next to B
 ## Conventions
 - Call the API only through the clients; don't build URLs in pages.
 - Biller owns validation and stored totals. A total shown on a page must match the API's `TotalPrice`.
-  The one exception is `Invoices_update.razor`: it shows the total after saving, from the current
-  item prices, because `PUT /invoices` copies line names and prices from the items (BIL-86).
+  The one exception is `Invoices_update.razor`: it shows the total after saving, from the item
+  version each line has selected, because `PUT /invoices` copies name and price from the version each
+  line names (BIL-85). Every line it saves sends a version: a line keeps its own until the owner
+  refreshes it or picks another, and a newly picked item gets its current version.
 - Only the mapping methods have tests so far (pages come with BIL-87), so check changed pages in the
   browser.
 - Don't add comments (Razor `@* *@`, HTML `<!-- -->`, C# `//`) or hint text on pages without asking the
