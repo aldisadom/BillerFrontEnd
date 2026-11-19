@@ -281,8 +281,11 @@ else
     }
 
     private async Task UpdateClick()
-    {        
-        await _invoiceClient.Update(invoiceUpdate!);
+    {
+        if (invoiceUpdate is null || invoiceUpdate.Items.Any(line => line.Version is null))
+            return;
+
+        await _invoiceClient.Update(invoiceUpdate);
 
         _navigationManager.NavigateTo($"/invoices/{invoiceId}", false);
     }
