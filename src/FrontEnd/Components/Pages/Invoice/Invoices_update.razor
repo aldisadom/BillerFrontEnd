@@ -26,7 +26,7 @@ else
     <div style="display: flex; align-items: center;">
         <h1>Invoice</h1>
         <div style="margin-left: 20px;">
-            <button @onclick="UpdateClick">Update</button>
+            <button disabled="@(!invoiceUpdate.Items.All(CanSave))" @onclick="UpdateClick">Update</button>
         </div>
         <div style="margin-left: 20px;">
             <button @onclick="DeleteClick">Delete</button>
@@ -112,9 +112,9 @@ else
                                     <button @onclick="() => RefreshClick(index)">Refresh</button>
                                 }
                             }
-                            else if (line.Version is not null)
+                            else
                             {
-                                @($"v{line.Version}")
+                                @AppFilterHelper.InvalidName
                             }
                         </td>
                         <td>
@@ -166,6 +166,12 @@ else
     {
         int? current = CurrentVersion(line.Id);
         return current is not null && (line.Version is null || line.Version < current);
+    }
+
+    private bool CanSave(InvoiceItemRequest line)
+    {
+        return versionsByItem.TryGetValue(line.Id, out List<ItemVersionResponse>? versions)
+            && versions.Exists(v => v.Version == line.Version);
     }
 
     private decimal LinePrice(InvoiceItemRequest line)
@@ -282,7 +288,7 @@ else
 
     private async Task UpdateClick()
     {
-        if (invoiceUpdate is null || invoiceUpdate.Items.Any(line => line.Version is null))
+        if (invoiceUpdate is null || !invoiceUpdate.Items.All(CanSave))
             return;
 
         await _invoiceClient.Update(invoiceUpdate);
